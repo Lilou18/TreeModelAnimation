@@ -18,6 +18,36 @@ TP3.Geometry = {
 
 	simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
 		//TODO
+		let nodeQueue = [rootNode];
+		while (nodeQueue.length > 0) {
+
+			let children = nodeQueue[0].childNode.length;
+			let i = 0;
+			while (children > 0) {
+
+				const parentVector = new THREE.Vector3(	nodeQueue[0].p1.x - nodeQueue[0].p0.x,
+														nodeQueue[0].p1.x - nodeQueue[0].p0.y,
+														nodeQueue[0].p1.x - nodeQueue[0].p0.z
+														);
+				const childVector = new THREE.Vector3(	nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.x,
+														nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.y,
+														nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.z
+														);
+
+				if (nodeQueue[0].childNode[i].childNode.length == 1 &&
+					childVector.angleTo(parentVector) < rotationThreshold) {
+					nodeQueue[0].childNode[i].parentNode = nodeQueue[0].childNode[i];
+					nodeQueue[0].childNode.splice(i,1);
+				}
+				else {
+					i++;
+				}
+				children--;
+			}
+
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
