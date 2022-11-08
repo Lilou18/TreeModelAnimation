@@ -37,7 +37,9 @@ TP3.Geometry = {
 				if (nodeQueue[0].childNode[i].childNode.length == 1 &&
 					childVector.angleTo(parentVector) < rotationThreshold) {
 					nodeQueue[0].childNode[i].parentNode = nodeQueue[0].childNode[i];
-					nodeQueue[0].childNode.splice(i,1);
+					nodeQueue[0].childNode[i] = nodeQueue[0].childNode[i].childNode[0];
+					nodeQueue[0].childNode[i].p0 = nodeQueue[0].p1;
+					nodeQueue[0].childNode[i].a0 = nodeQueue[0].a1;
 				}
 				else {
 					i++;
@@ -48,6 +50,8 @@ TP3.Geometry = {
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
+
+		return rootNode;
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
