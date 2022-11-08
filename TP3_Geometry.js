@@ -26,12 +26,12 @@ TP3.Geometry = {
 			while (children > 0) {
 
 				const parentVector = new THREE.Vector3(	nodeQueue[0].p1.x - nodeQueue[0].p0.x,
-														nodeQueue[0].p1.x - nodeQueue[0].p0.y,
-														nodeQueue[0].p1.x - nodeQueue[0].p0.z
+														nodeQueue[0].p1.y - nodeQueue[0].p0.y,
+														nodeQueue[0].p1.z - nodeQueue[0].p0.z
 														);
 				const childVector = new THREE.Vector3(	nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.x,
-														nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.y,
-														nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.z
+														nodeQueue[0].childNode[i].p1.y - nodeQueue[0].childNode[i].p0.y,
+														nodeQueue[0].childNode[i].p1.z - nodeQueue[0].childNode[i].p0.z
 														);
 
 				if (nodeQueue[0].childNode[i].childNode.length == 1 &&
