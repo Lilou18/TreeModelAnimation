@@ -16,8 +16,49 @@ class Node {
 
 TP3.Geometry = {
 
+	simplifyNode: function (node, rotationThreshold) {
+		/**
+		 * Checks if node need to be removed from the tree.
+		 * Remove node from tree if it's the only child of a tree
+		 * and its rotation angle is smaller than the threshold.
+		 *
+		 * @param {Node} node The actual node of the tree.
+		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
+		 */
+
+		if (node.childNode.length === 1) {
+			// Calculer la rotation effective du node
+
+			// TODO : calculer la rotation à partir des 3 points connus (2 vecteurs)
+			// Formule : cos(\theta)= {\frac  {{\vec  {u}}.{\vec  {v}}}{||{\vec  {u}}||.||{\vec  {v}}||}
+			// let u = node.parentNode.p1 - node.parentNode.p0
+			// let v = node.p1 - node.p0
+			// let angle_between_vectors = Math.acos( / )
+
+			if (angle_between_vectors < rotationThreshold) {
+				// REMOVE node
+
+				// TODO
+				// 		Attention de mettre à jour correctement	les valeurs
+				// 		des noeuds précédents et	suivants des noeuds retirés. :
+				// 				parentNode, childNode, p0, p1, a0 et a1
+			}
+		}
+	},
+
 	simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
-		//TODO
+		/**
+		 * Returns the simplified Skeleton of a given tree.
+		 *
+		 * @param {Node} rootNode The root of the tree.
+		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
+		 * @return {Node} The root of the tree.
+		 */
+		for (let node in rootNode.childNode) {
+			TP3.Geometry.simplifyNode(node, rotationThreshold)
+		}
+
+		return rootNode
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
