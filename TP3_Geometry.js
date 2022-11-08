@@ -26,23 +26,24 @@ TP3.Geometry = {
 		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
 		 */
 
-		if (node.childNode.length === 1) {
-			// Calculer la rotation effective du node
+		// Calculer la rotation effective du node
+		const childVector = new THREE.Vector3(
+			node.p1.x - node.p0.x,
+			node.p1.y - node.p0.y,
+			node.p1.z - node.p0.z
+		);
 
-			// TODO : calculer la rotation à partir des 3 points connus (2 vecteurs)
-			// Formule : cos(\theta)= {\frac  {{\vec  {u}}.{\vec  {v}}}{||{\vec  {u}}||.||{\vec  {v}}||}
-			// let u = node.parentNode.p1 - node.parentNode.p0
-			// let v = node.p1 - node.p0
-			// let angle_between_vectors = Math.acos( / )
+		const parentVector = new THREE.Vector3(
+			node.p1.x - node.p0.x,
+			node.p1.y - node.p0.y,
+			node.p1.z - node.p0.z
+		);
 
-			if (angle_between_vectors < rotationThreshold) {
-				// REMOVE node
-
-				// TODO
-				// 		Attention de mettre à jour correctement	les valeurs
-				// 		des noeuds précédents et	suivants des noeuds retirés. :
-				// 				parentNode, childNode, p0, p1, a0 et a1
-			}
+		if (node.childNode.length === 1 && childVector.angleTo(parentVector)) {
+			// REMOVE NODE
+			// le parent se termine au debut du prochain enfant
+			node.parentNode.p1 = node.childNode.p0
+			node.parentNode.a1 = node.childNode.a0
 		}
 	},
 
