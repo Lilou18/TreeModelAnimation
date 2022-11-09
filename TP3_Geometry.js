@@ -39,32 +39,18 @@ TP3.Geometry = {
 			node.parentNode.p1.z - node.parentNode.p0.z
 		);
 
-		// console.log("%f", childVector.angleTo(parentVector))
-		// console.log("%d", node.childNode.length)
-
-		if (node.childNode.length === 1 && childVector.angleTo(parentVector) < rotationThreshold) {
-			console.log("REMOVE NODE")
-
+		if (node.parentNode.childNode.length === 1 && childVector.angleTo(parentVector) < rotationThreshold) {
 			// REMOVE NODE
-			// le parent se termine maintenant à la fin du node actuel
+
+			// parentNode se termine maintenant à la fin du node actuel (on étire le parent)
 			node.parentNode.p1 = node.p1
 			node.parentNode.a1 = node.a1
 
-			for (let i = 0; i < node.childNode.length; i++) {
-				// les enfants recoivent un nouveau parent
-				node.childNode[i].parentNode = node.parentNode
-			}
+			// le petit-enfant unique prend le parent comme nouveau parent
+			node.childNode[0].parentNode = node.parentNode
 
-			// FIXME
+			// les enfants du node sont transférés au parent
 			node.parentNode.childNode = node.childNode
-			// // les enfants du node sont transférés au parent
-			// node.parentNode.childNode = node.parentNode.childNode + node.childNode
-
-			// for (let i = 0; i < node.childNode.length; i++) {
-			// 	// les enfants du node sont transférés au parent
-			// 	node.parentNode.childNode.push(node.childNode[i])
-			// }
-
 		}
 
 		// appel récursif
