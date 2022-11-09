@@ -21,41 +21,48 @@ TP3.Geometry = {
 		let nodeQueue = [rootNode];
 		while (nodeQueue.length > 0) {
 
-			for (let i = 0; i < nodeQueue[0].childNode.length; i++) {
+			let oneChild = nodeQueue[0].childNode.length === 1;
+			if (oneChild) {
 
 				let parentVector = new THREE.Vector3(nodeQueue[0].p1.x - nodeQueue[0].p0.x,
 					                                 nodeQueue[0].p1.y - nodeQueue[0].p0.y,
 					                                 nodeQueue[0].p1.z - nodeQueue[0].p0.z
 				);
-				let childVector = new THREE.Vector3(nodeQueue[0].childNode[i].p1.x - nodeQueue[0].childNode[i].p0.x,
-					                                nodeQueue[0].childNode[i].p1.y - nodeQueue[0].childNode[i].p0.y,
-					                                nodeQueue[0].childNode[i].p1.z - nodeQueue[0].childNode[i].p0.z
+				let childVector = new THREE.Vector3(nodeQueue[0].childNode[0].p1.x - nodeQueue[0].childNode[0].p0.x,
+					                                nodeQueue[0].childNode[0].p1.y - nodeQueue[0].childNode[0].p0.y,
+					                                nodeQueue[0].childNode[0].p1.z - nodeQueue[0].childNode[0].p0.z
 				);
 
-				while (nodeQueue[0].childNode[i].childNode.length === 1 &&
-					childVector.angleTo(parentVector) < rotationThreshold) {
+				let thresholdMet = childVector.angleTo(parentVector) < rotationThreshold;
+				while (oneChild && thresholdMet) {
 
 					let parent = nodeQueue[0];
-					let child = nodeQueue[0].childNode[i];
-					let grandChild = nodeQueue[0].childNode[i].childNode[0];
+					let child = nodeQueue[0].childNode[0];
+					let grandChildren = nodeQueue[0].childNode[0].childNode;
 
-					grandChild.parentNode = parent;
+					for (let j = 0; j < grandChildren.length; j++) {
+						grandChildren[j].parentNode = parent;
+					}
 					child.parent = child;
 					child.childNode = [];
-					parent.childNode[i] = grandChild;
+					parent.childNode = grandChildren;
 
-					parent.p1 = grandChild.p0;
-					parent.a1 = grandChild.a0;
+					parent.p1 = child.p1;
+					parent.a1 = child.a1;
 
-					parentVector = new THREE.Vector3(parent.p1.x - parent.p0.x,
-						                         parent.p1.y - parent.p0.y,
-						                         parent.p1.z - parent.p0.z
-					);
+					oneChild = parent.childNode.length === 1;
+					if (oneChild) {
+						parentVector = new THREE.Vector3(parent.p1.x - parent.p0.x,
+													 parent.p1.y - parent.p0.y,
+													 parent.p1.z - parent.p0.z
+						);
 
-					childVector = new THREE.Vector3(grandChild.p1.x - grandChild.p0.x,
-						                        grandChild.p1.y - grandChild.p0.y,
-						                        grandChild.p1.z - grandChild.p0.z
-					);
+						childVector = new THREE.Vector3(grandChildren[0].p1.x - grandChildren[0].p0.x,
+													grandChildren[0].p1.y - grandChildren[0].p0.y,
+													grandChildren[0].p1.z - grandChildren[0].p0.z
+						);
+						thresholdMet = childVector.angleTo(parentVector) < rotationThreshold;
+					}
 				}
 			}
 
