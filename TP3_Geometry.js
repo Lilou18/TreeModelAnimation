@@ -43,19 +43,19 @@ TP3.Geometry = {
 			// REMOVE NODE
 
 			// parentNode se termine maintenant à la fin du node actuel (on étire le parent)
-			node.parentNode.p1 = node.p1
-			node.parentNode.a1 = node.a1
+			node.parentNode.p1 = node.p1;
+			node.parentNode.a1 = node.a1;
 
 			// le petit-enfant unique prend le parent comme nouveau parent
-			node.childNode[0].parentNode = node.parentNode
+			node.childNode[0].parentNode = node.parentNode;
 
 			// les enfants du node sont transférés au parent
-			node.parentNode.childNode = node.childNode
+			node.parentNode.childNode = node.childNode;
 		}
 
 		// appel récursif
 		for (let i = 0; i < node.childNode.length; i++) {
-			TP3.Geometry.simplifyNode(node.childNode[i], rotationThreshold)
+			TP3.Geometry.simplifyNode(node.childNode[i], rotationThreshold);
 		}
 	},
 
@@ -68,7 +68,7 @@ TP3.Geometry = {
 		 * @return {Node} The root of the tree.
 		 */
 		for (let i = 0; i < rootNode.childNode.length; i++) {
-			TP3.Geometry.simplifyNode(rootNode.childNode[i], rotationThreshold)
+			TP3.Geometry.simplifyNode(rootNode.childNode[i], rotationThreshold);
 		}
 
 		return rootNode
