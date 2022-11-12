@@ -16,8 +16,62 @@ class Node {
 
 TP3.Geometry = {
 
+	simplifyNode: function (node, rotationThreshold) {
+		/**
+		 * Checks if node need to be removed from the tree.
+		 * Remove node from tree if it's the only child of a tree
+		 * and its rotation angle is smaller than the threshold.
+		 *
+		 * @param {Node} node The actual node of the tree.
+		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
+		 */
+
+		// Calculer la rotation effective du node
+		const childVector = new THREE.Vector3(
+			node.p1.x - node.p0.x,
+			node.p1.y - node.p0.y,
+			node.p1.z - node.p0.z
+		);
+
+		const parentVector = new THREE.Vector3(
+			node.parentNode.p1.x - node.parentNode.p0.x,
+			node.parentNode.p1.y - node.parentNode.p0.y,
+			node.parentNode.p1.z - node.parentNode.p0.z
+		);
+
+		if (node.parentNode.childNode.length === 1 && childVector.angleTo(parentVector) < rotationThreshold) {
+			// REMOVE NODE
+
+			// parentNode se termine maintenant à la fin du node actuel (on étire le parent)
+			node.parentNode.p1 = node.p1;
+			node.parentNode.a1 = node.a1;
+
+			// le petit-enfant unique prend le parent comme nouveau parent
+			node.childNode[0].parentNode = node.parentNode;
+
+			// les enfants du node sont transférés au parent
+			node.parentNode.childNode = node.childNode;
+		}
+
+		// appel récursif
+		for (let i = 0; i < node.childNode.length; i++) {
+			TP3.Geometry.simplifyNode(node.childNode[i], rotationThreshold);
+		}
+	},
+
 	simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
-		//TODO
+		/**
+		 * Returns the simplified Skeleton of a given tree.
+		 *
+		 * @param {Node} rootNode The root of the tree.
+		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
+		 * @return {Node} The root of the tree.
+		 */
+		for (let i = 0; i < rootNode.childNode.length; i++) {
+			TP3.Geometry.simplifyNode(rootNode.childNode[i], rotationThreshold);
+		}
+
+		return rootNode
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
