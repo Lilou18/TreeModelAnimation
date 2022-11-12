@@ -67,10 +67,11 @@ TP3.Render = {
 			// values for rootNode
 			let angle = 0
 			let axis = new THREE.Vector3(1, 0, 0);
+			let parentVector = new THREE.Vector3(0,0,0);
 
 			if (node.parentNode) {
 				// not rootNode
-				const parentVector = new THREE.Vector3(
+				    parentVector = new THREE.Vector3(
 					node.parentNode.p1.x - node.parentNode.p0.x,
 					node.parentNode.p1.y - node.parentNode.p0.y,
 					node.parentNode.p1.z - node.parentNode.p0.z
@@ -88,15 +89,23 @@ TP3.Render = {
 
 			// Matrices de transformation
 			const translation = new THREE.Matrix4();
-			translation.makeTranslation(0, childVector.length(), 0);
+			translation.makeTranslation(0, childVector.length()/2 + parentVector.length()/2, 0);
+
+			translationToPivot = new THREE.Matrix4();
+			translationToPivot.makeTranslation(0,-childVector.length()/2,0);
+
+			translationBack = new THREE.Matrix4();
+			translationBack.makeTranslation(0,childVector.length()/2,0);
 
 			const rotation = new THREE.Matrix4();
 			rotation.makeRotationAxis(axis, angle);
 
 			// Transformation matrix
 			const new_matrix = new THREE.Matrix4();
-			new_matrix.multiplyMatrices(matrix, rotation);
-			new_matrix.multiplyMatrices(new_matrix, translation);
+			new_matrix.multiplyMatrices(matrix,translation);
+			new_matrix.multiplyMatrices(new_matrix,translationToPivot);
+			new_matrix.multiplyMatrices(new_matrix,rotation);
+			new_matrix.multiplyMatrices(new_matrix,translationBack);
 
 
 			geometry.applyMatrix4(new_matrix);
