@@ -32,9 +32,9 @@ TP3.Render = {
 		const branches_material = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 
 		// Mesh arrays
-		let branches = []
-		let apples = []
-		let leaves = []
+		let branches = [];
+		let apples = [];
+		let leaves = [];
 
 		// Fonction récursive à utiliser pour le parcours de l'arbre
 		function drawNodeRough(node, matrix) {
@@ -65,7 +65,7 @@ TP3.Render = {
 			// Calcul des facteurs de translation et rotation
 
 			// values for rootNode
-			let angle = 0
+			let angle = 0;
 			let axis = new THREE.Vector3(1, 0, 0);
 			let parentVector = new THREE.Vector3(0,0,0);
 
@@ -115,7 +115,7 @@ TP3.Render = {
 					let rand_axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
 					let rand_angle = Math.random()*2*Math.PI;
 					let rotation_itself = new THREE.Matrix4();
-					rotation_itself.makeRotationAxis(rand_axis, rand_angle)
+					rotation_itself.makeRotationAxis(rand_axis, rand_angle);
 
 					// position aléatoire relative au noeud sur l'axe de la branche
 					let rand_axial;
@@ -157,7 +157,7 @@ TP3.Render = {
 					let rand_axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
 					let rand_angle = Math.random()*2*Math.PI;
 					let rotation_itself = new THREE.Matrix4();
-					rotation_itself.makeRotationAxis(rand_axis, rand_angle)
+					rotation_itself.makeRotationAxis(rand_axis, rand_angle);
 
 					// position aléatoire relative au noeud sur l'axe de la branche
 					const rand_axial = getRandomInsideInterval(-alpha, alpha);
@@ -202,9 +202,9 @@ TP3.Render = {
 		const leaves_mesh = new THREE.Mesh(merged_leaves, leaves_material);
 
 		// Add to scene
-		scene.add(branches_mesh)
-		scene.add(apples_mesh)
-		scene.add(leaves_mesh)
+		scene.add(branches_mesh);
+		scene.add(apples_mesh);
+		scene.add(leaves_mesh);
 
 	},
 
