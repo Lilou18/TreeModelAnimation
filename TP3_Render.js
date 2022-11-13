@@ -23,12 +23,6 @@ TP3.Render = {
 			 * @param {THREE.Matrix4} matrix Transformation matrix up to this node
 			 */
 
-			// APPLE (CubeBufferGeometry)
-			// TODO
-
-			// LEAVES (PlaneBufferGeometry)
-			// TODO
-
 			// BRANCH (CylinderBufferGeometry)
 			const radiusTop = node.a1;
 			const radiusBottom = node.a0;
@@ -103,6 +97,21 @@ TP3.Render = {
 
 			geometry.applyMatrix4(new_matrix);
 			branches.push(geometry);
+
+
+			// LEAVES (PlaneBufferGeometry)
+			// TODO
+			// 	des carrés de taille alpha×alpha pour les feuilles.
+			// 	condition : branches qui ont une largeur a0 plus petite que alpha * leavesCutoff
+			// 	Placez leavesDensity feuilles aléatoirement (avec translation et rotation aléatoire)
+			// 	dans un rayon de taille alpha/2 autour des branches
+			// 	Pour les branches terminales (qui n’ont pas d’enfant):
+			// 	laissez les feuilles dépasser la longueur de la branche de alpha.
+
+
+			// APPLE (CubeBufferGeometry)
+			// TODO
+
 
 			// Recursion
 			for (let i = 0; i < node.childNode.length; i++) {
