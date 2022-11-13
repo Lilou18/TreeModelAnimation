@@ -1,10 +1,33 @@
-// import * as BufferGeometryUtils from "./js/BufferGeometryUtils";
+function vectorFromPoints(p0, p1) {
+	return new THREE.Vector3(
+		p1.x - p0.x,
+		p1.y - p0.y,
+		p1.z - p0.z
+	);
+}
+
+function getRandomInsideInterval(min, max) {
+	return Math.random() * (max - min) + min;
+}
+
+function getRandomInsideDisk(radius) {
+	while (true) {
+		const x = getRandomInsideInterval(-radius, radius);
+		const z = getRandomInsideInterval(-radius, radius);
+		if ( Math.sqrt(x**2 + z**2) < radius ) {
+			return {x, z};
+		}
+	}
+}
+
+
 
 TP3.Render = {
 	drawTreeRough: function (rootNode, scene, alpha, radialDivisions = 8, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
 		// Material
 		const leaves_material = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
+		leaves_material.side = THREE.DoubleSide;
 		const apples_material = new THREE.MeshPhongMaterial({color: 0x5F0B0B});
 		const branches_material = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 
@@ -23,46 +46,23 @@ TP3.Render = {
 			 * @param {THREE.Matrix4} matrix Transformation matrix up to this node
 			 */
 
-			// APPLE (CubeBufferGeometry)
-			// TODO
+			const nodeVector = vectorFromPoints(node.p0, node.p1);
+			const height = nodeVector.length();
 
-			// LEAVES (PlaneBufferGeometry)
-			// TODO
-
-			// BRANCH (CylinderBufferGeometry)
 			const radiusTop = node.a1;
 			const radiusBottom = node.a0;
-
-			const height_vector = new THREE.Vector3(
-				node.p1.x - node.p0.x,
-				node.p1.y - node.p0.y,
-				node.p1.z - node.p0.z
-			);
-
-			const height = height_vector.length();
 			const radialSegments = radialDivisions;
 			const heightSegments = 1;
-			// const openEnded = true;
-			// const thetaStart = 0;
-			// const thetaLength = 6.283185307179586;
 
-			const geometry = new THREE.CylinderBufferGeometry(
+			const cylinder_geometry = new THREE.CylinderBufferGeometry(
 				radiusTop,
 				radiusBottom,
 				height,
 				radialSegments,
-				heightSegments,
-				// openEnded,
-				// thetaStart,
-				// thetaLength
+				heightSegments
 			)
 
 			// Calcul des facteurs de translation et rotation
-			const childVector = new THREE.Vector3(
-				node.p1.x - node.p0.x,
-				node.p1.y - node.p0.y,
-			 	node.p1.z - node.p0.z,
-			)
 
 			// values for rootNode
 			let angle = 0
@@ -71,24 +71,24 @@ TP3.Render = {
 
 			if (node.parentNode) {
 				// not rootNode
-				    parentVector = new THREE.Vector3(
+				parentVector = new THREE.Vector3(
 					node.parentNode.p1.x - node.parentNode.p0.x,
 					node.parentNode.p1.y - node.parentNode.p0.y,
 					node.parentNode.p1.z - node.parentNode.p0.z
 				);
-				angle = childVector.angleTo(parentVector);
-				axis.crossVectors(childVector, parentVector).normalize();
+				angle = nodeVector.angleTo(parentVector);
+				axis.crossVectors(nodeVector, parentVector).normalize();
 			}
 
 			// Matrices de transformation
 			const translation = new THREE.Matrix4();
-			translation.makeTranslation(0, childVector.length()/2 + parentVector.length()/2, 0);
+			translation.makeTranslation(0, nodeVector.length()/2 + parentVector.length()/2, 0);
 
 			let translationToPivot = new THREE.Matrix4();
-			translationToPivot.makeTranslation(0,-childVector.length()/2,0);
+			translationToPivot.makeTranslation(0,-nodeVector.length()/2,0);
 
 			let translationBack = new THREE.Matrix4();
-			translationBack.makeTranslation(0,childVector.length()/2,0);
+			translationBack.makeTranslation(0,nodeVector.length()/2,0);
 
 			const rotation = new THREE.Matrix4();
 			rotation.makeRotationAxis(axis, angle);
@@ -100,9 +100,86 @@ TP3.Render = {
 			new_matrix.multiplyMatrices(new_matrix,rotation);
 			new_matrix.multiplyMatrices(new_matrix,translationBack);
 
+			cylinder_geometry.applyMatrix4(new_matrix);
+			branches.push(cylinder_geometry);
 
-			geometry.applyMatrix4(new_matrix);
-			branches.push(geometry);
+			// LEAVES (PlaneBufferGeometry)
+			if (node.a0 < alpha * leavesCutoff) {
+
+				// for (let i = 0; i < 1; i++) { // FIXME REMOVE LATER : TEST AVEC UNE FEUILLE PAR NOEUD
+				for (let i = 0; i < leavesDensity; i++) {
+					// N.B. LES FEUILLES SONT INITIALISÉES AU MILIEU DE LA BRANCHE (origine)
+
+					// rotation aléatoire sur elle-même
+					// choix d'un axe aléatoire et d'un angle aléatoire
+					let rand_axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+					let rand_angle = Math.random()*2*Math.PI;
+					let rotation_itself = new THREE.Matrix4();
+					rotation_itself.makeRotationAxis(rand_axis, rand_angle)
+
+					// position aléatoire relative au noeud sur l'axe de la branche
+					let rand_axial;
+					let axial_translation = new THREE.Matrix4();
+
+					if (node.childNode.length === 0) {
+						//  branche terminale : (-alpha à +2alpha)
+						rand_axial = getRandomInsideInterval(-alpha, 2 * alpha);
+					} else {
+						//  branche non terminale : (-alpha à +alpha)
+						rand_axial = getRandomInsideInterval(-alpha, alpha);
+						axial_translation.makeTranslation(0, rand_axial,0);
+					}
+
+					// éloignement de la branche de 0 à alpha/2
+					let {x, z} = getRandomInsideDisk(alpha/2);
+					let radial_translation = new THREE.Matrix4();
+					radial_translation.makeTranslation(x, 0,z);
+
+					const plane_geometry = new THREE.PlaneBufferGeometry(alpha, alpha);
+
+					plane_geometry.applyMatrix4(rotation_itself);
+					plane_geometry.applyMatrix4(axial_translation);
+					plane_geometry.applyMatrix4(radial_translation);
+					plane_geometry.applyMatrix4(matrix);
+
+					leaves.push(plane_geometry);
+				}
+
+			}
+
+			// APPLE (CubeBufferGeometry)
+			if (node.a0 < alpha * leavesCutoff) {
+				// N.B. LES POMMES SONT INITIALISÉES AU MILIEU DE LA BRANCHE (origine)
+
+				if (applesProbability > Math.random()) {
+					// rotation aléatoire sur elle-même
+					// choix d'un axe aléatoire et d'un angle aléatoire
+					let rand_axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+					let rand_angle = Math.random()*2*Math.PI;
+					let rotation_itself = new THREE.Matrix4();
+					rotation_itself.makeRotationAxis(rand_axis, rand_angle)
+
+					// position aléatoire relative au noeud sur l'axe de la branche
+					const rand_axial = getRandomInsideInterval(-alpha, alpha);
+					let axial_translation = new THREE.Matrix4();
+					axial_translation.makeTranslation(0, rand_axial,0);
+
+					// éloignement de la branche de 0 à alpha/2
+					let {x, z} = getRandomInsideDisk(alpha/2);
+					let radial_translation = new THREE.Matrix4();
+					radial_translation.makeTranslation(x, 0,z);
+
+					const cube_geometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha);
+
+					cube_geometry.applyMatrix4(rotation_itself);
+					cube_geometry.applyMatrix4(axial_translation);
+					cube_geometry.applyMatrix4(radial_translation);
+					cube_geometry.applyMatrix4(matrix);
+
+					apples.push(cube_geometry);
+				}
+
+			}
 
 			// Recursion
 			for (let i = 0; i < node.childNode.length; i++) {
@@ -118,16 +195,16 @@ TP3.Render = {
 		const merged_branches = THREE.BufferGeometryUtils.mergeBufferGeometries(branches, false);
 		const branches_mesh = new THREE.Mesh(merged_branches, branches_material);
 
-		// const merged_apples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples, false);
-		// const apples_mesh = new THREE.Mesh(merged_apples, apples_material);
+		const merged_apples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples, false);
+		const apples_mesh = new THREE.Mesh(merged_apples, apples_material);
 
-		// const merged_leaves = THREE.BufferGeometryUtils.mergeBufferGeometries(leaves, false);
-		// const leaves_mesh = new THREE.Mesh(merged_leaves, leaves_material);
+		const merged_leaves = THREE.BufferGeometryUtils.mergeBufferGeometries(leaves, false);
+		const leaves_mesh = new THREE.Mesh(merged_leaves, leaves_material);
 
 		// Add to scene
 		scene.add(branches_mesh)
-		// scene.add(apples_mesh)
-		// scene.add(leaves_mesh)
+		scene.add(apples_mesh)
+		scene.add(leaves_mesh)
 
 	},
 
