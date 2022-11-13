@@ -80,21 +80,14 @@ TP3.Render = {
 				axis.crossVectors(childVector, parentVector).normalize();
 			}
 
-			// FIXME
-			// 	On doit identifier les transformations précises de translation et rotation.
-			//  Pistes :
-			//  	- la rotation semble off (décalage)
-			//  	-	vecteur non normalisé?
-			//  	-
-
 			// Matrices de transformation
 			const translation = new THREE.Matrix4();
 			translation.makeTranslation(0, childVector.length()/2 + parentVector.length()/2, 0);
 
-			translationToPivot = new THREE.Matrix4();
+			let translationToPivot = new THREE.Matrix4();
 			translationToPivot.makeTranslation(0,-childVector.length()/2,0);
 
-			translationBack = new THREE.Matrix4();
+			let translationBack = new THREE.Matrix4();
 			translationBack.makeTranslation(0,childVector.length()/2,0);
 
 			const rotation = new THREE.Matrix4();
