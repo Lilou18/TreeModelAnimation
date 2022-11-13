@@ -7,7 +7,7 @@ function vectorFromPoints(p0, p1) {
 }
 
 function getRandomInsideInterval(min, max) {
-	return Math.random() * (max - min) + min;
+	return (Math.random() * (max - min) + min);
 }
 
 function getRandomInsideDisk(radius) {
@@ -21,9 +21,10 @@ function getRandomInsideDisk(radius) {
 }
 
 
-
 TP3.Render = {
 	drawTreeRough: function (rootNode, scene, alpha, radialDivisions = 8, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
+
+		rootNode = TP3.Geometry.simplifySkeleton(rootNode);
 
 		// Material
 		const leaves_material = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
@@ -80,25 +81,47 @@ TP3.Render = {
 				axis.crossVectors(nodeVector, parentVector).normalize();
 			}
 
-			// Matrices de transformation
-			const translation = new THREE.Matrix4();
-			translation.makeTranslation(0, nodeVector.length()/2 + parentVector.length()/2, 0);
+			// // Matrices de transformation
+			// const translation = new THREE.Matrix4();
+			// translation.makeTranslation(0, nodeVector.length()/2 + parentVector.length()/2, 0);
+			//
+			// const translationToPivot = new THREE.Matrix4();
+			// translationToPivot.makeTranslation(0,-nodeVector.length()/2,0);
+			//
+			// const rotation = new THREE.Matrix4();
+			// rotation.makeRotationAxis(axis, angle);
+			//
+			// const translationBack = new THREE.Matrix4();
+			// translationBack.makeTranslation(0,nodeVector.length()/2,0);
+			//
+			// // Transformation matrix
+			// const new_matrix = new THREE.Matrix4();
+			// new_matrix.multiplyMatrices(matrix,translation);
+			// new_matrix.multiplyMatrices(new_matrix,translationToPivot);
+			// new_matrix.multiplyMatrices(new_matrix,rotation);
+			// new_matrix.multiplyMatrices(new_matrix,translationBack);
 
-			let translationToPivot = new THREE.Matrix4();
-			translationToPivot.makeTranslation(0,-nodeVector.length()/2,0);
 
-			let translationBack = new THREE.Matrix4();
-			translationBack.makeTranslation(0,nodeVector.length()/2,0);
+			// Matrices de transformation ( REFACTORED )
 
+			// positionne le pivot sur p0 (bottom of cylinder)
+			const translation_to_p0 = new THREE.Matrix4();
+			translation_to_p0.makeTranslation(0, height/2, 0);
+
+			// pivote la branche autour de p0
 			const rotation = new THREE.Matrix4();
 			rotation.makeRotationAxis(axis, angle);
 
-			// Transformation matrix
+			// pousse la branche au bout de son parent (joint p0 node et p1 du parent)
+			const translation_to_parent_p1 = new THREE.Matrix4();
+			translation_to_parent_p1.makeTranslation(0, parentVector.length()/2, 0);
+
+			// Transformation matrix to apply on cylinder_geometry
 			const new_matrix = new THREE.Matrix4();
-			new_matrix.multiplyMatrices(matrix,translation);
-			new_matrix.multiplyMatrices(new_matrix,translationToPivot);
-			new_matrix.multiplyMatrices(new_matrix,rotation);
-			new_matrix.multiplyMatrices(new_matrix,translationBack);
+			new_matrix.multiplyMatrices(translation_to_p0,new_matrix);
+			new_matrix.multiplyMatrices(rotation,new_matrix);
+			new_matrix.multiplyMatrices(translation_to_parent_p1,new_matrix);
+			new_matrix.multiplyMatrices(matrix,new_matrix);
 
 			cylinder_geometry.applyMatrix4(new_matrix);
 			branches.push(cylinder_geometry);
@@ -122,11 +145,13 @@ TP3.Render = {
 					let axial_translation = new THREE.Matrix4();
 
 					if (node.childNode.length === 0) {
-						//  branche terminale : (-alpha à +2alpha)
-						rand_axial = getRandomInsideInterval(-alpha, 2 * alpha);
+						//	branche terminale : (-height à +height+alpha)
+						// console.log("Branche terminale")
+						rand_axial = getRandomInsideInterval(-height, height+alpha);
 					} else {
-						//  branche non terminale : (-alpha à +alpha)
-						rand_axial = getRandomInsideInterval(-alpha, alpha);
+						//  branche non terminale : (-height à +height)
+						// console.log("Branche non-terminale")
+						rand_axial = getRandomInsideInterval(-height, height);
 						axial_translation.makeTranslation(0, rand_axial,0);
 					}
 
@@ -135,12 +160,16 @@ TP3.Render = {
 					let radial_translation = new THREE.Matrix4();
 					radial_translation.makeTranslation(x, 0,z);
 
-					const plane_geometry = new THREE.PlaneBufferGeometry(alpha, alpha);
+					let plane_geometry = new THREE.PlaneBufferGeometry(alpha, alpha);
 
-					plane_geometry.applyMatrix4(rotation_itself);
-					plane_geometry.applyMatrix4(axial_translation);
-					plane_geometry.applyMatrix4(radial_translation);
-					plane_geometry.applyMatrix4(matrix);
+					// Transformation matrix to apply on plane_geometry
+					const leave_matrix = new THREE.Matrix4();
+					leave_matrix.multiplyMatrices(rotation_itself,leave_matrix);
+					leave_matrix.multiplyMatrices(axial_translation,leave_matrix);
+					leave_matrix.multiplyMatrices(radial_translation,leave_matrix);
+					leave_matrix.multiplyMatrices(new_matrix,leave_matrix);
+
+					plane_geometry.applyMatrix4(leave_matrix);
 
 					leaves.push(plane_geometry);
 				}
@@ -160,7 +189,7 @@ TP3.Render = {
 					rotation_itself.makeRotationAxis(rand_axis, rand_angle);
 
 					// position aléatoire relative au noeud sur l'axe de la branche
-					const rand_axial = getRandomInsideInterval(-alpha, alpha);
+					const rand_axial = getRandomInsideInterval(-height, height);
 					let axial_translation = new THREE.Matrix4();
 					axial_translation.makeTranslation(0, rand_axial,0);
 
@@ -171,10 +200,14 @@ TP3.Render = {
 
 					const cube_geometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha);
 
-					cube_geometry.applyMatrix4(rotation_itself);
-					cube_geometry.applyMatrix4(axial_translation);
-					cube_geometry.applyMatrix4(radial_translation);
-					cube_geometry.applyMatrix4(matrix);
+					// Transformation matrix to apply on plane_geometry
+					const apple_matrix = new THREE.Matrix4();
+					apple_matrix.multiplyMatrices(rotation_itself,apple_matrix);
+					apple_matrix.multiplyMatrices(axial_translation,apple_matrix);
+					apple_matrix.multiplyMatrices(radial_translation,apple_matrix);
+					apple_matrix.multiplyMatrices(new_matrix,apple_matrix);
+
+					cube_geometry.applyMatrix4(apple_matrix);
 
 					apples.push(cube_geometry);
 				}
@@ -183,23 +216,26 @@ TP3.Render = {
 
 			// Recursion
 			for (let i = 0; i < node.childNode.length; i++) {
-				drawNodeRough(node.childNode[i], new_matrix);
+					drawNodeRough(node.childNode[i], new_matrix);
 			}
 
 		}
 
-		// Parcours de l'arbre à partir de la racine
+		// Parcours de l'arbre SIMPLIFIÉ à partir de la racine
 		drawNodeRough(rootNode, matrix);
 
 		// mergeBufferGeometries
 		const merged_branches = THREE.BufferGeometryUtils.mergeBufferGeometries(branches, false);
 		const branches_mesh = new THREE.Mesh(merged_branches, branches_material);
+		branches_mesh.castShadow = true;
 
 		const merged_apples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples, false);
 		const apples_mesh = new THREE.Mesh(merged_apples, apples_material);
+		apples_mesh.castShadow = true;
 
 		const merged_leaves = THREE.BufferGeometryUtils.mergeBufferGeometries(leaves, false);
 		const leaves_mesh = new THREE.Mesh(merged_leaves, leaves_material);
+		leaves_mesh.castShadow = true;
 
 		// Add to scene
 		scene.add(branches_mesh);
