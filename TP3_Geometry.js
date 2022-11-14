@@ -82,6 +82,8 @@ TP3.Geometry = {
 		// noms de variable selon l'image de : https://fr.wikipedia.org/wiki/Algorithme_de_Casteljau
 		// conversion : https://stackoverflow.com/questions/7880884/how-to-convert-from-an-hermite-curve-into-bezier-curve
 		// conversion de courbe de Hermite en courbe de Bézier
+		// vo et v1 sont les tangentes
+		// h0 et h1 sont les points
 		const p00 = h0
 		const p01 = h0 + v0/3
 		const p02 = h1 - v1/3
@@ -90,17 +92,24 @@ TP3.Geometry = {
 		// algorithme de De Casteljau
 
 		// premier retranchement
-		const p10 = p00.add(p01).divideScalar(2);
-		const p11 = p01.add(p02).divideScalar(2);
-		const p12 = p02.add(p03).divideScalar(2);
+		const p10 = p00.multiplyScalar(1-t).add(p01.multiplyScalar(t));
+		const p11 = p01.multiplyScalar(1-t).add(p02.multiplyScalar(t));
+		const p12 = p02.multiplyScalar(1-t).add(p03.multiplyScalar(t));
+		//const p10 = p00.add(p01).divideScalar(2);
+		//const p11 = p01.add(p02).divideScalar(2);
+		//const p12 = p02.add(p03).divideScalar(2);
 
 		// deuxième retranchement
-		const p20 = p10.add(p11).divideScalar(2);
-		const p21 = p11.add(p12).divideScalar(2);
+		const p20 = p10.multiplyScalar(1-t).add(p11.multiplyScalar(t));
+		const p21 = p11.multiplyScalar(1-t).add(p12.multiplyScalar(t));
+		//const p20 = p10.add(p11).divideScalar(2);
+		//const p21 = p11.add(p12).divideScalar(2);
 
 		// point et tangente
-		const p = p20.add(p21).divideScalar(2);
+		const p = p20.multiplyScalar(1-t).add(p21.multiplyScalar(t));
 		const dp = vectorFromPoints(p20, p21).normalize();
+		//const p = p20.add(p21).divideScalar(2);
+		//const dp = vectorFromPoints(p20, p21).normalize();
 
 		return [p, dp];
 	},
