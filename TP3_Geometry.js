@@ -6,6 +6,10 @@ function vectorFromPoints(p0, p1) {
 	);
 }
 
+function lerp(a, b, t) {
+	return a.multiplyScalar(1-t).add(b.multiplyScalar(t));
+}
+
 class Node {
 	constructor(parentNode) {
 		this.parentNode = parentNode; //Noeud parent
@@ -79,7 +83,32 @@ TP3.Geometry = {
 	},
 
 	hermite: function (h0, h1, v0, v1, t) {
-		//TODO
+		// noms de variable selon l'image de : https://fr.wikipedia.org/wiki/Algorithme_de_Casteljau
+		// conversion : https://stackoverflow.com/questions/7880884/how-to-convert-from-an-hermite-curve-into-bezier-curve
+		// conversion de courbe de Hermite en courbe de Bézier
+		// vo et v1 sont les tangentes
+		// h0 et h1 sont les points
+		const p00 = h0
+		const p01 = h0 + v0/3
+		const p02 = h1 - v1/3
+		const p03 = h1
+
+		// algorithme de De Casteljau
+
+		// premier retranchement
+		const p10 = lerp(p00,p01,t)
+		const p11 = lerp(p01,p02,t)
+		const p12 = lerp(p02,p03,t)
+
+		// deuxième retranchement
+		const p20 = lerp(p10,p11,t)
+		const p21 = lerp(p11,p12,t)
+
+		// point et tangente
+		const p = lerp(p20,p21,t)
+		const dp = vectorFromPoints(p20, p21).normalize();
+
+		return [p, dp];
 	},
 
 
