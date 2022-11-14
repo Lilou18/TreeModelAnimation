@@ -6,6 +6,10 @@ function vectorFromPoints(p0, p1) {
 	);
 }
 
+function lerp(a, b, t) {
+	return a.multiplyScalar(1-t).add(b.multiplyScalar(t));
+}
+
 class Node {
 	constructor(parentNode) {
 		this.parentNode = parentNode; //Noeud parent
@@ -92,24 +96,17 @@ TP3.Geometry = {
 		// algorithme de De Casteljau
 
 		// premier retranchement
-		const p10 = p00.multiplyScalar(1-t).add(p01.multiplyScalar(t));
-		const p11 = p01.multiplyScalar(1-t).add(p02.multiplyScalar(t));
-		const p12 = p02.multiplyScalar(1-t).add(p03.multiplyScalar(t));
-		//const p10 = p00.add(p01).divideScalar(2);
-		//const p11 = p01.add(p02).divideScalar(2);
-		//const p12 = p02.add(p03).divideScalar(2);
+		const p10 = lerp(p00,p01,t)
+		const p11 = lerp(p01,p02,t)
+		const p12 = lerp(p02,p03,t)
 
 		// deuxième retranchement
-		const p20 = p10.multiplyScalar(1-t).add(p11.multiplyScalar(t));
-		const p21 = p11.multiplyScalar(1-t).add(p12.multiplyScalar(t));
-		//const p20 = p10.add(p11).divideScalar(2);
-		//const p21 = p11.add(p12).divideScalar(2);
+		const p20 = lerp(p10,p11,t)
+		const p21 = lerp(p11,p12,t)
 
 		// point et tangente
-		const p = p20.multiplyScalar(1-t).add(p21.multiplyScalar(t));
+		const p = lerp(p20,p21,t)
 		const dp = vectorFromPoints(p20, p21).normalize();
-		//const p = p20.add(p21).divideScalar(2);
-		//const dp = vectorFromPoints(p20, p21).normalize();
 
 		return [p, dp];
 	},
