@@ -78,9 +78,6 @@ TP3.Geometry = {
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
 
 		let nodeQueue = [rootNode];
-		//rootNode.childNode[0].childNode[0].childNode = [];
-		//rootNode.childNode[0].childNode[1].childNode = [];
-		//rootNode.childNode[1].childNode = [];
 		while (nodeQueue.length > 0) {
 
 			let node = nodeQueue[0];
@@ -114,29 +111,27 @@ TP3.Geometry = {
 				let sectionPoints = [];
 				let radius = node.a0 - radiusFactor * i;
 				for (let j = 0; j < radialDivisions; j++) {
-					let point = new THREE.Vector3(radius * Math.sin(dtheta * j),
+					let point = new THREE.Vector3(radius * Math.sin(dtheta * j + Math.PI/2),
 												  0,
-												  radius * Math.cos(dtheta * j));
-					if (i !== 0) {
-						point.applyMatrix4(node.transform);
-					}
+												  radius * Math.cos(dtheta * j + Math.PI/2));
+
 					point.applyMatrix4(parentRotation);
+					point.applyMatrix4(node.transform);
 					point.applyMatrix4(translation);
 					sectionPoints.push(point);
 				}
 
 				if (i !== lengthDivisions - 1) {
 					let vtdt = this.hermite(h0, h1, v0, v1, t + dt)[1];
-
 					[axis, angle] = this.findRotation(vt, vtdt);
 					const rotation = new THREE.Matrix4().makeRotationAxis(axis, angle);
-					node.transform.multiplyMatrices(node.transform, rotation);
+					node.transform.multiplyMatrices(rotation, node.transform);
 				}
 
 				node.sections.push(sectionPoints);
 			}
 
-			node.transform.multiplyMatrices(parentRotation, node.transform);
+			node.transform.multiplyMatrices(node.transform, parentRotation);
 			nodeQueue = nodeQueue.concat(node.childNode);
 			nodeQueue.splice(0,1);
 		}
