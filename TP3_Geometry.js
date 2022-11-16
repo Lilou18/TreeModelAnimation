@@ -107,17 +107,9 @@ TP3.Geometry = {
 			for (let i = 0; i < lengthDivisions; i++) {
 
 				let t = i * dt;
+
 				let [pt, vt] = this.hermite(h0, h1, v0, v1, t);
-				let vtdt = this.hermite(h0, h1, v0, v1, t + dt)[1];
-				if (t + dt > 1) {
-					vtdt = vt;
-				}
-
-				[axis, angle] = this.findRotation(vt, vtdt);
-				const rotation = new THREE.Matrix4().makeRotationAxis(axis, angle);
 				const translation = new THREE.Matrix4().makeTranslation(pt.x, pt.y, pt.z);
-
-				node.transform.multiplyMatrices(node.transform, rotation);
 
 				let sectionPoints = [];
 				let radius = node.a0 - radiusFactor * i;
@@ -131,6 +123,14 @@ TP3.Geometry = {
 					point.applyMatrix4(parentRotation);
 					point.applyMatrix4(translation);
 					sectionPoints.push(point);
+				}
+
+				if (i !== lengthDivisions - 1) {
+					let vtdt = this.hermite(h0, h1, v0, v1, t + dt)[1];
+
+					[axis, angle] = this.findRotation(vt, vtdt);
+					const rotation = new THREE.Matrix4().makeRotationAxis(axis, angle);
+					node.transform.multiplyMatrices(node.transform, rotation);
 				}
 
 				node.sections.push(sectionPoints);
