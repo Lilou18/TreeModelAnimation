@@ -205,13 +205,17 @@ TP3.Render = {
 
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 
-		const section = rootNode.sections[1];
+		const sectionsNum = rootNode.sections.length;
+		const sectionLen = rootNode.sections[0].length;
+		const f32vertices = new Float32Array(sectionsNum * sectionLen * 3);
 
-		let f32vertices = new Float32Array(section.length * 3);
-		for (let i = 0; i < f32vertices.length; i += 3) {
-			f32vertices[i] = section[i/3].x;
-			f32vertices[i + 1] = section[i/3].y;
-			f32vertices[i + 2] = section[i/3].z;
+		for (let i = 0; i < sectionsNum; i++) {
+			let section = rootNode.sections[i];
+			for (let j = 0; j < sectionLen; j++) {
+				f32vertices[i * sectionLen * 3 + j * 3] = section[j].x;
+				f32vertices[i * sectionLen * 3 + j * 3 + 1] = section[j].y;
+				f32vertices[i * sectionLen * 3 + j * 3 + 2] = section[j].z;
+			}
 		}
 
 		const geometry = new THREE.BufferGeometry();
@@ -222,10 +226,27 @@ TP3.Render = {
 		let v3Idx = 2;
 
 		const facesIdx = [];
-		for (let i = 0; i < section.length - 2; i++) {
+		for (let i = 0; i < sectionLen - 2; i++) {
 			facesIdx.push(v1Idx, v2Idx, v3Idx);
 			v2Idx = v1Idx;
-			v1Idx = section.length - 1 - i;
+			v1Idx = sectionLen - 1 - i;
+		}
+
+		v1Idx = 0;
+		v2Idx = 1;
+		v3Idx = 6;
+
+		for (let i = 1; i < sectionsNum; i++) {
+			for (let j = 0; j < sectionLen; j++) {
+				facesIdx.push(v1Idx, v2Idx, v3Idx);
+				facesIdx.push(v1Idx, v3Idx, v1Idx + 5);
+				v2Idx = v1Idx;
+				v1Idx = sectionLen - 1 - j + 5 * (i - 1);
+				v3Idx = v2Idx + 5;
+			}
+			v1Idx += 5;
+			v2Idx += 5;
+			v3Idx += 5;
 		}
 
 		geometry.setIndex(facesIdx);

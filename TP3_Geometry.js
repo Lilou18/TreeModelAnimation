@@ -168,8 +168,16 @@ TP3.Geometry = {
 
 	// Trouver l'axe et l'angle de rotation entre deux vecteurs
 	findRotation: function (a, b) {
+
+		let length = a.length() * b.length();
+
 		const axis = new THREE.Vector3().crossVectors(a, b).normalize();
-		var c = a.dot(b) / (a.length() * b.length());
+
+		if (length === 0) {
+			return [axis, 0];
+		}
+
+		var c = a.dot(b) / length;
 
 		if (c < -1) {
 			c = -1;
