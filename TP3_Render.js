@@ -205,58 +205,82 @@ TP3.Render = {
 
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 
-		const sectionsNum = rootNode.sections.length;
-		const sectionLen = rootNode.sections[0].length;
-		const f32vertices = new Float32Array(sectionsNum * sectionLen * 3);
+		let branches = [];
 
-		for (let i = 0; i < sectionsNum; i++) {
-			let section = rootNode.sections[i];
-			for (let j = 0; j < sectionLen; j++) {
-				f32vertices[i * sectionLen * 3 + j * 3] = section[j].x;
-				f32vertices[i * sectionLen * 3 + j * 3 + 1] = section[j].y;
-				f32vertices[i * sectionLen * 3 + j * 3 + 2] = section[j].z;
+		let nodeQueue = [rootNode];
+		while (nodeQueue.length > 0) {
+
+			let node = nodeQueue[0];
+			const sectionsNum = node.sections.length;
+			const sectionLen = node.sections[0].length;
+			const f32vertices = new Float32Array(sectionsNum * sectionLen * 3);
+
+			for (let i = 0; i < sectionsNum; i++) {
+				let section = node.sections[i];
+				for (let j = 0; j < sectionLen; j++) {
+					f32vertices[i * sectionLen * 3 + j * 3] = section[j].x;
+					f32vertices[i * sectionLen * 3 + j * 3 + 1] = section[j].y;
+					f32vertices[i * sectionLen * 3 + j * 3 + 2] = section[j].z;
+				}
 			}
-		}
 
-		const geometry = new THREE.BufferGeometry();
-		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
+			const geometry = new THREE.BufferGeometry();
+			geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
+			const facesIdx = [];
 
-		let v1Idx = 0;
-		let v2Idx = 1;
-		let v3Idx = 2;
+			let v1Idx = 0;
+			let v2Idx = 1;
+			let v3Idx = 1 + sectionLen;
 
-		const facesIdx = [];
-		for (let i = 0; i < sectionLen - 2; i++) {
-			facesIdx.push(v1Idx, v2Idx, v3Idx);
-			v2Idx = v1Idx;
-			v1Idx = sectionLen - 1 - i;
-		}
-
-		v1Idx = 0;
-		v2Idx = 1;
-		v3Idx = 6;
-
-		for (let i = 1; i < sectionsNum; i++) {
-			for (let j = 0; j < sectionLen; j++) {
-				facesIdx.push(v1Idx, v2Idx, v3Idx);
-				facesIdx.push(v1Idx, v3Idx, v1Idx + 5);
-				v2Idx = v1Idx;
-				v1Idx = sectionLen - 1 - j + 5 * (i - 1);
-				v3Idx = v2Idx + 5;
+			for (let i = 1; i < sectionsNum; i++) {
+				for (let j = 0; j < sectionLen; j++) {
+					facesIdx.push(v1Idx, v2Idx, v3Idx);
+					facesIdx.push(v1Idx, v3Idx, v1Idx + sectionLen);
+					v2Idx = v1Idx;
+					v1Idx = sectionLen - 1 - j + sectionLen * (i - 1);
+					v3Idx = v2Idx + sectionLen;
+				}
+				v1Idx += sectionLen;
+				v2Idx += sectionLen;
+				v3Idx += sectionLen;
 			}
-			v1Idx += 5;
-			v2Idx += 5;
-			v3Idx += 5;
+
+			if (!node.parentNode) {
+
+				v1Idx = 0;
+				v2Idx = 1;
+				v3Idx = 2;
+
+				for (let i = 0; i < sectionLen - 2; i++) {
+					facesIdx.push(v1Idx, v2Idx, v3Idx);
+					v2Idx = v1Idx;
+					v1Idx = sectionLen - 1 - i;
+				}
+			}
+
+			if (node.childNode.length === 0) {
+
+				v1Idx = (sectionsNum - 1) * sectionLen;
+				v2Idx = (sectionsNum - 1) * sectionLen  + 1;
+				v3Idx = (sectionsNum - 1) * sectionLen + 2;
+
+				for (let i = 0; i < sectionLen - 2; i++) {
+					facesIdx.push(v1Idx, v2Idx, v3Idx);
+					v2Idx = v1Idx;
+					v1Idx = (sectionsNum - 1) * sectionLen + sectionLen - 1 - i;
+				}
+			}
+
+			geometry.setIndex(facesIdx);
+			geometry.computeVertexNormals();
+			branches.push(geometry)
+			const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
+			branchesMesh.castShadow = true;
+			scene.add(branchesMesh);
+
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
 		}
-
-		geometry.setIndex(facesIdx);
-		geometry.computeVertexNormals();
-
-		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
-		branchesMesh.castShadow = true;
-		scene.add(branchesMesh);
-
-		return geometry;
 	},
 
 	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, rootNode) {

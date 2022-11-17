@@ -1,4 +1,3 @@
-
 class Node {
 	constructor(parentNode) {
 		this.parentNode = parentNode; //Noeud parent
@@ -86,14 +85,14 @@ TP3.Geometry = {
 
 			let h0 = new THREE.Vector3(node.p0.x, node.p0.y, node.p0.z);
 			let h1 = new THREE.Vector3(node.p1.x, node.p1.y, node.p1.z);
-			let v0 = new THREE.Vector3(0, 1, 0);
+			let v1 = new THREE.Vector3(h1.x - h0.x, h1.y - h0.y, h1.z - h0.z);
+			let v0 = new THREE.Vector3(v1.x, v1.y, v1.z);
 			if (node.parentNode) {
 				v0 = new THREE.Vector3(node.parentNode.p1.x - node.parentNode.p0.x,
-					                   node.parentNode.p1.y - node.parentNode.p0.y,
-					                   node.parentNode.p1.z - node.parentNode.p0.z);
+					node.parentNode.p1.y - node.parentNode.p0.y,
+					node.parentNode.p1.z - node.parentNode.p0.z);
 				parentRotation = node.parentNode.transform;
 			}
-			let v1 = new THREE.Vector3(h1.x - h0.x, h1.y - h0.y, h1.z - h0.z);
 
 			const radiusFactor = (node.a0 - node.a1)/(lengthDivisions - 1);
 			const dt = 1/(lengthDivisions - 1);
