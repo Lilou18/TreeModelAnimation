@@ -202,7 +202,40 @@ TP3.Render = {
 	},
 
 	drawTreeHermite: function (rootNode, scene, alpha, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
-		//TODO
+
+		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
+
+		const section = rootNode.sections[1];
+
+		let f32vertices = new Float32Array(section.length * 3);
+		for (let i = 0; i < f32vertices.length; i += 3) {
+			f32vertices[i] = section[i/3].x;
+			f32vertices[i + 1] = section[i/3].y;
+			f32vertices[i + 2] = section[i/3].z;
+		}
+
+		const geometry = new THREE.BufferGeometry();
+		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
+
+		let v1Idx = 0;
+		let v2Idx = 1;
+		let v3Idx = 2;
+
+		const facesIdx = [];
+		for (let i = 0; i < section.length - 2; i++) {
+			facesIdx.push(v1Idx, v2Idx, v3Idx);
+			v2Idx = v1Idx;
+			v1Idx = section.length - 1 - i;
+		}
+
+		geometry.setIndex(facesIdx);
+		geometry.computeVertexNormals();
+
+		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
+		branchesMesh.castShadow = true;
+		scene.add(branchesMesh);
+
+		return geometry;
 	},
 
 	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, rootNode) {
