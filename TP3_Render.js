@@ -213,6 +213,40 @@ TP3.Render = {
 		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
 		const facesIdx = [];
 
+		for (let i = 0; i < sectionLen - 2; i++) {
+			let v1Idx = rootNode.verticesIDs[0][i];
+			let v2Idx = rootNode.verticesIDs[0][i + 1];
+			let v3Idx = rootNode.verticesIDs[0][sectionLen - 1];
+			facesIdx.push(v1Idx, v2Idx, v3Idx);
+		}
+
+		let v1Idx = rootNode.verticesIDs[0][sectionLen - 1];
+		let v2Idx = rootNode.verticesIDs[0][0];
+		let v3Idx = rootNode.verticesIDs[1][0];
+		let v4Idx = rootNode.verticesIDs[1][sectionLen - 1];
+
+		for (let i = 0; i < sectionsNum; i++) {
+			for (let j = 0; j < sectionLen; j++) {
+
+				facesIdx.push(v1Idx, v2Idx, v3Idx);
+				facesIdx.push(v1Idx, v3Idx, v4Idx);
+
+				if (j !== sectionLen - 1) {
+					v1Idx = rootNode.verticesIDs[i][j];
+					v2Idx = rootNode.verticesIDs[i][j + 1];
+					v3Idx = rootNode.verticesIDs[i + 1][j + 1];
+					v4Idx = rootNode.verticesIDs[i + 1][j];
+				}
+			}
+
+			if (i !== sectionsNum - 1) {
+				v1Idx = rootNode.verticesIDs[i + 1][sectionLen - 1];
+				v2Idx = rootNode.verticesIDs[i + 1][0];
+				v3Idx = rootNode.verticesIDs[i + 2][0];
+				v4Idx = rootNode.verticesIDs[i + 2][sectionLen - 1];
+			}
+		}
+
 		let nodeQueue = rootNode.childNode;
 		while (nodeQueue.length > 0) {
 
@@ -264,29 +298,12 @@ TP3.Render = {
 				}
 			}
 
-			if (false) {
-
-				v1Idx = 0;
-				v2Idx = 1;
-				v3Idx = 2;
-
+			if (node.childNode.length === 0) {
 				for (let i = 0; i < sectionLen - 2; i++) {
+					v1Idx = node.verticesIDs[sectionsNum - 1][i];
+					v2Idx = node.verticesIDs[sectionsNum - 1][i + 1];
+					v3Idx = node.verticesIDs[sectionsNum - 1][sectionLen - 1];
 					facesIdx.push(v1Idx, v2Idx, v3Idx);
-					v2Idx = v1Idx;
-					v1Idx = sectionLen - 1 - i;
-				}
-			}
-
-			if (false) {
-
-				v1Idx = (sectionsNum - 1) * sectionLen;
-				v2Idx = (sectionsNum - 1) * sectionLen  + 1;
-				v3Idx = (sectionsNum - 1) * sectionLen + 2;
-
-				for (let i = 0; i < sectionLen - 2; i++) {
-					facesIdx.push(v1Idx, v2Idx, v3Idx);
-					v2Idx = v1Idx;
-					v1Idx = (sectionsNum - 1) * sectionLen + sectionLen - 1 - i;
 				}
 			}
 
