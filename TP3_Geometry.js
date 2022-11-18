@@ -12,6 +12,7 @@ class Node {
 		this.transform = null; //Matrice de transformation de la branche
 
 		this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
+		this.verticesIDs = null;
 	}
 }
 

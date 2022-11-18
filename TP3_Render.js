@@ -205,47 +205,66 @@ TP3.Render = {
 
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 
-		let branches = [];
+		const sectionsNum = rootNode.sections.length - 1;
+		const sectionLen = rootNode.sections[0].length;
 
-		let nodeQueue = [rootNode];
+		const geometry = new THREE.BufferGeometry();
+		const f32vertices = this.initializeF32Vertex(rootNode);
+		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
+		const facesIdx = [];
+
+		let nodeQueue = rootNode.childNode;
 		while (nodeQueue.length > 0) {
 
 			let node = nodeQueue[0];
-			const sectionsNum = node.sections.length;
-			const sectionLen = node.sections[0].length;
-			const f32vertices = new Float32Array(sectionsNum * sectionLen * 3);
+			let parentVertices = node.parentNode.verticesIDs[node.parentNode.verticesIDs.length - 1];
 
-			for (let i = 0; i < sectionsNum; i++) {
-				let section = node.sections[i];
-				for (let j = 0; j < sectionLen; j++) {
-					f32vertices[i * sectionLen * 3 + j * 3] = section[j].x;
-					f32vertices[i * sectionLen * 3 + j * 3 + 1] = section[j].y;
-					f32vertices[i * sectionLen * 3 + j * 3 + 2] = section[j].z;
+			let v1Idx = parentVertices[sectionLen - 1];
+			let v2Idx = parentVertices[0];
+			let v3Idx = node.verticesIDs[0][0];
+			let v4Idx = node.verticesIDs[0][sectionLen - 1];
+
+			for (let i = 0; i < sectionLen; i++) {
+
+				facesIdx.push(v1Idx, v2Idx, v3Idx);
+				facesIdx.push(v1Idx, v3Idx, v4Idx);
+
+				if (i !== sectionLen - 1) {
+					v1Idx = parentVertices[i];
+					v2Idx = parentVertices[i + 1];
+					v3Idx = node.verticesIDs[0][i + 1];
+					v4Idx = node.verticesIDs[0][i];
 				}
 			}
 
-			const geometry = new THREE.BufferGeometry();
-			geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
-			const facesIdx = [];
+			v1Idx = node.verticesIDs[0][sectionLen - 1];
+			v2Idx = node.verticesIDs[0][0];
+			v3Idx = node.verticesIDs[1][0];
+			v4Idx = node.verticesIDs[1][sectionLen - 1];
 
-			let v1Idx = 0;
-			let v2Idx = 1;
-			let v3Idx = 1 + sectionLen;
-
-			for (let i = 1; i < sectionsNum; i++) {
+			for (let i = 0; i < sectionsNum - 1; i++) {
 				for (let j = 0; j < sectionLen; j++) {
+
 					facesIdx.push(v1Idx, v2Idx, v3Idx);
-					facesIdx.push(v1Idx, v3Idx, v1Idx + sectionLen);
-					v2Idx = v1Idx;
-					v1Idx = sectionLen - 1 - j + sectionLen * (i - 1);
-					v3Idx = v2Idx + sectionLen;
+					facesIdx.push(v1Idx, v3Idx, v4Idx);
+
+					if (j !== sectionLen - 1) {
+						v1Idx = node.verticesIDs[i][j];
+						v2Idx = node.verticesIDs[i][j + 1];
+						v3Idx = node.verticesIDs[i + 1][j + 1];
+						v4Idx = node.verticesIDs[i + 1][j];
+					}
 				}
-				v1Idx += sectionLen;
-				v2Idx += sectionLen;
-				v3Idx += sectionLen;
+
+				if (i !== sectionsNum - 2) {
+					v1Idx = node.verticesIDs[i + 1][sectionLen - 1];
+					v2Idx = node.verticesIDs[i + 1][0];
+					v3Idx = node.verticesIDs[i + 2][0];
+					v4Idx = node.verticesIDs[i + 2][sectionLen - 1];
+				}
 			}
 
-			if (!node.parentNode) {
+			if (false) {
 
 				v1Idx = 0;
 				v2Idx = 1;
@@ -258,7 +277,7 @@ TP3.Render = {
 				}
 			}
 
-			if (node.childNode.length === 0) {
+			if (false) {
 
 				v1Idx = (sectionsNum - 1) * sectionLen;
 				v2Idx = (sectionsNum - 1) * sectionLen  + 1;
@@ -271,16 +290,90 @@ TP3.Render = {
 				}
 			}
 
-			geometry.setIndex(facesIdx);
-			geometry.computeVertexNormals();
-			branches.push(geometry)
-			const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
-			branchesMesh.castShadow = true;
-			scene.add(branchesMesh);
-
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
+
+		geometry.setIndex(facesIdx);
+		geometry.computeVertexNormals();
+		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
+		branchesMesh.castShadow = true;
+		scene.add(branchesMesh);
+	},
+
+	initializeF32Vertex: function(rootNode) {
+
+		let nodeQueue = [rootNode];
+		let nodeNum = 0;
+		while (nodeQueue.length > 0) {
+			nodeNum++;
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
+
+		nodeQueue = [rootNode];
+
+		const sectionsNum = rootNode.sections.length;
+		const sectionLen = rootNode.sections[0].length;
+		const f32vertices = new Float32Array(nodeNum * sectionsNum * sectionLen * 3);
+
+		let startVIdx = 0;
+		while (nodeQueue.length > 0) {
+
+			nodeQueue[0].verticesIDs = [];
+
+			if (!nodeQueue[0].parentNode) {
+				for (let i = 0; i < sectionsNum; i++) {
+
+					let sectionIDs = [];
+					for (let j = 0; j < sectionLen; j++) {
+
+						let verticesIdx = startVIdx + (i * sectionLen + j) * 3;
+						f32vertices[verticesIdx] = nodeQueue[0].sections[i][j].x;
+						f32vertices[verticesIdx + 1] = nodeQueue[0].sections[i][j].y;
+						f32vertices[verticesIdx + 2] = nodeQueue[0].sections[i][j].z;
+
+						sectionIDs.push(verticesIdx/3);
+					}
+					nodeQueue[0].verticesIDs.push(sectionIDs);
+				}
+			}
+			else {
+				for (let i = 0; i < sectionsNum - 1; i++) {
+
+					let sectionIDs = [];
+					for (let j = 0; j < sectionLen; j++) {
+
+						let verticesIdx = startVIdx + (i * sectionLen + j) * 3;
+						f32vertices[verticesIdx] = nodeQueue[0].sections[i][j].x;
+						f32vertices[verticesIdx + 1] = nodeQueue[0].sections[i][j].y;
+						f32vertices[verticesIdx + 2] = nodeQueue[0].sections[i][j].z;
+
+						sectionIDs.push(verticesIdx/3);
+					}
+					nodeQueue[0].verticesIDs.push(sectionIDs);
+				}
+			}
+
+			/*
+			for (let i = 0; i < nodeQueue[0].verticesIDs.length; i++) {
+
+				window.alert(nodeQueue[0].verticesIDs[i]);
+			}
+
+			window.alert("over");
+			*/
+
+			startVIdx += nodeQueue[0].verticesIDs.length * sectionLen * 3;
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
+
+		return f32vertices;
+	},
+
+	drawTreeHermiteRec: function(node, f32vertices, facesIdx, geometry, sectionsNum, sectionLen, startIdx, parentIdx) {
+		//TODO
 	},
 
 	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, rootNode) {
