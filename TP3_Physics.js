@@ -14,6 +14,8 @@ TP3.Physics = {
 				stack.push(currentNode.childNode[i]);
 			}
 
+			currentNode.ip0 = currentNode.p0.clone();
+			currentNode.ip1 = currentNode.p1.clone();
 			currentNode.bp0 = currentNode.p0.clone();
 			currentNode.bp1 = currentNode.p1.clone();
 			currentNode.rp0 = currentNode.p0.clone();
@@ -55,48 +57,66 @@ TP3.Physics = {
 
 		// TODO: Projection du mouvement, force de restitution et amortissement de la velocite
 
-		if (node.parent) {
-			node.p0.applyMatrix4(node.parent.transform);
-			node.p1.applyMatrix4(node.parent.transform);
+		// Apply the parent's transformation on the points of the current node
+		if (node.parentNode) {
+
+			const translation = new THREE.Matrix4().makeTranslation(-node.p0.x, -node.p0.y, -node.p0.z);
+			const translationBack = new THREE.Matrix4().makeTranslation(node.parentNode.p1.x,
+				                                                        node.parentNode.p1.y,
+				                                                        node.parentNode.p1.z);
+			//node.p0.applyMatrix4(translation);
+			node.p1.applyMatrix4(translation);
+			//node.p0.applyMatrix4(node.parentNode.transform);
+			node.p1.applyMatrix4(node.parentNode.transform);
+			//node.p0.applyMatrix4(translationBack);
+			node.p1.applyMatrix4(translationBack);
+
+			node.p0 = node.parentNode.p1.clone();
 		}
 
+		// Compute new position p_1(t + dt)
 		let p1dt = new THREE.Vector3(node.p1.x + node.vel.x * dt,
 			                         node.p1.y + node.vel.y * dt,
 			                         node.p1.z + node.vel.z * dt);
 
+		// Compute p_1(t + dt) - p_0 normalized
 		let vector1 = new THREE.Vector3(p1dt.x - node.p0.x,
 			                            p1dt.y - node.p0.y,
 			                            p1dt.z - node.p0.z).normalize();
 
+		// Compute p_1 - p_0 normalized
 		let vector0 = new THREE.Vector3(node.p1.x - node.p0.x,
 			                            node.p1.y - node.p0.y,
 			                            node.p1.z - node.p0.z).normalize();
 
-		[axis, angle] = TP3.Geometry.findRotation(vector1, vector0);
+		// Compute angle between the two and find the rotation matrix
+		const [axis, angle] = TP3.Geometry.findRotation(vector0, vector1);
 		const rotation = new THREE.Matrix4().makeRotationAxis(axis, angle);
 
-		let p1Temp = node.p1;
-
-		node.transform = new THREE.Matrix4();
-		if (node.parent) {
-			node.p1.applyMatrix4(rotation);
-			node.transform.multiplyMatrices(rotation, node.parent.transform);
+		// Set up the transform of the current node for its children to use
+		if (node.parentNode) {
+			node.transform = new THREE.Matrix4().multiplyMatrices(rotation, node.parentNode.transform);
 		}
-
 		else {
-			node.p1.applyMatrix4(rotation);
-			node.transform.multiplyMatrices(rotation, node.transform);
+			node.transform = rotation;
 		}
 
-		let newVel = new THREE.Vector3((node.p1.x - p1Temp.x) / dt,
-			                           (node.p1.y - p1Temp.y) / dt,
-				                       (node.p1.z - p1Temp.z) / dt);
+		const translation = new THREE.Matrix4().makeTranslation(-node.p0.x, -node.p0.y, -node.p0.z);
+		const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x, node.p0.y, node.p0.z);
+		let p1Temp = new THREE.Vector3(node.p1.x, node.p1.y, node.p1.z);
+		node.p1.applyMatrix4(translation);
+		node.p1.applyMatrix4(rotation);
+		node.p1.applyMatrix4(translationBack);
+		
 
-		node.vel = newVel;
+		node.vel = new THREE.Vector3((node.p1.x - p1Temp.x) / dt,
+			                         (node.p1.y - p1Temp.y) / dt,
+			                         (node.p1.z - p1Temp.z) / dt).multiplyScalar(0.1);
+
 
 		// Appel recursif sur les enfants
 		for (var i = 0; i < node.childNode.length; i++) {
-			//this.applyForces(node.childNode[i], dt, time);
+			this.applyForces(node.childNode[i], dt, time);
 		}
 	}
 }
