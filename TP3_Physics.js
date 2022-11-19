@@ -55,9 +55,48 @@ TP3.Physics = {
 
 		// TODO: Projection du mouvement, force de restitution et amortissement de la velocite
 
+		if (node.parent) {
+			node.p0.applyMatrix4(node.parent.transform);
+			node.p1.applyMatrix4(node.parent.transform);
+		}
+
+		let p1dt = new THREE.Vector3(node.p1.x + node.vel.x * dt,
+			                         node.p1.y + node.vel.y * dt,
+			                         node.p1.z + node.vel.z * dt);
+
+		let vector1 = new THREE.Vector3(p1dt.x - node.p0.x,
+			                            p1dt.y - node.p0.y,
+			                            p1dt.z - node.p0.z).normalize();
+
+		let vector0 = new THREE.Vector3(node.p1.x - node.p0.x,
+			                            node.p1.y - node.p0.y,
+			                            node.p1.z - node.p0.z).normalize();
+
+		[axis, angle] = TP3.Geometry.findRotation(vector1, vector0);
+		const rotation = new THREE.Matrix4().makeRotationAxis(axis, angle);
+
+		let p1Temp = node.p1;
+
+		node.transform = new THREE.Matrix4();
+		if (node.parent) {
+			node.p1.applyMatrix4(rotation);
+			node.transform.multiplyMatrices(rotation, node.parent.transform);
+		}
+
+		else {
+			node.p1.applyMatrix4(rotation);
+			node.transform.multiplyMatrices(rotation, node.transform);
+		}
+
+		let newVel = new THREE.Vector3((node.p1.x - p1Temp.x) / dt,
+			                           (node.p1.y - p1Temp.y) / dt,
+				                       (node.p1.z - p1Temp.z) / dt);
+
+		node.vel = newVel;
+
 		// Appel recursif sur les enfants
 		for (var i = 0; i < node.childNode.length; i++) {
-			this.applyForces(node.childNode[i], dt, time);
+			//this.applyForces(node.childNode[i], dt, time);
 		}
 	}
 }
