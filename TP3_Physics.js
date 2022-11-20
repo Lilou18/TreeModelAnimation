@@ -107,11 +107,30 @@ TP3.Physics = {
 		node.p1.applyMatrix4(translation);
 		node.p1.applyMatrix4(rotation);
 		node.p1.applyMatrix4(translationBack);
-		
+
 
 		node.vel = new THREE.Vector3((node.p1.x - p1Temp.x) / dt,
 			                         (node.p1.y - p1Temp.y) / dt,
-			                         (node.p1.z - p1Temp.z) / dt).multiplyScalar(0.1);
+			                         (node.p1.z - p1Temp.z) / dt);
+
+		let vectorI = new THREE.Vector3(node.ip1.x - node.ip0.x,
+			                            node.ip1.y - node.ip0.y,
+			                            node.ip1.z - node.ip0.z);
+
+		let vectorF = new THREE.Vector3(node.p1.x - node.p0.x,
+			                            node.p1.y - node.p0.y,
+			                            node.p1.z - node.p0.z);
+
+		const [axis2, angle2] = TP3.Geometry.findRotation(vectorF, vectorI);
+		const rotation2 = new THREE.Matrix4().makeRotationAxis(axis2, angle2 ** 2);
+
+		let pt = new THREE.Vector3(node.p1.x, node.p1.y, node.p1.z).applyMatrix4(rotation2);
+
+		let restitution = new THREE.Vector3(pt.x - node.p1.x,
+			                                pt.y - node.p1.y,
+			                                pt.z - node.p1.z).multiplyScalar(node.a0 * 1000);
+
+		node.vel.add(restitution).multiplyScalar(0.7);
 
 
 		// Appel recursif sur les enfants
