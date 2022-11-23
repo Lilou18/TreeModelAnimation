@@ -427,20 +427,27 @@ TP3.Render = {
 				}
 			}
 
+			// Si la branche est assez petite pour contenir des feuilles on crée
+			// les points de c'est feuilles.
 			if(nodeQueue[0].a0 < alpha * leavesCutoff){
 				const nodeVector = vectorFromPoints(nodeQueue[0].p0,nodeQueue[0].p1)
 				const height = nodeVector.length();
 				let leavesID = [];
 
+				// Nous devons créer leavesDensity de feuilles. Afin d'avoir un triangle équilatéral nous prenons les
+				// coordonnées (0,0,0) (alpha,0,0) et (alpha/2,L,0) ou L est calculé grâce à pythagore et nous avons
+				// ainsi un triangle équilatéral. Nous appliquons par la suite une translation et rotation
+				// aléatoire.
 				for(let  k = 0; k < leavesDensity;k++) {
 					const firstPoint = new THREE.Vector3(0, 0, 0);
 					// alpha*alpha??????
 					const secundPoint = new THREE.Vector3(alpha, 0, 0);
 
-					// calculate the third Point
+					// Calcul de la valeur en Y du troisième point grâce à pythagore.
 					const thirdPointY = Math.sqrt((Math.pow(alpha, 2) - Math.pow(alpha / 2, 2)));
 					const thirdPoint = new THREE.Vector3(alpha / 2, thirdPointY, 0);
 
+					// Rotation aléatoire
 					let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random());
 					let randAngle = Math.random()*2*Math.PI;
 
@@ -453,6 +460,8 @@ TP3.Render = {
 
 
 					let randY;
+					// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
+					// doit être aléatoire.
 					if(nodeQueue[0].childNode.length === 0){
 						randY = getRandomInsideInterval(-height,height+alpha);
 					}
@@ -460,7 +469,7 @@ TP3.Render = {
 						randY = getRandomInsideInterval(-height,height)
 					}
 
-
+					// Translation aléatoire en x et en z.
 					let {x, z} = getRandomInsideDisk(alpha/2);
 
 					 let translationY = new THREE.Matrix4();
@@ -479,7 +488,7 @@ TP3.Render = {
 
 
 
-
+					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
 					let translationToBranch = new THREE.Matrix4();
 					translationToBranch.makeTranslation(nodeQueue[0].p0.x + nodeVector.x / 2, nodeQueue[0].p0.y + nodeVector.y / 2, nodeQueue[0].p0.z + nodeVector.z / 2)
 
@@ -487,39 +496,28 @@ TP3.Render = {
 					secundPoint.applyMatrix4(translationToBranch);
 					thirdPoint.applyMatrix4(translationToBranch);
 
+					// Nous ajoutons les points qui formeront la feuille à notre tableau.
 					f32VerticesLeaves[startLeaves] = firstPoint.x
 					f32VerticesLeaves[startLeaves + 1] = firstPoint.y;
 					f32VerticesLeaves[startLeaves + 2] = firstPoint.z;
 					nodeQueue[0].leavesIDs.push(leavesCounting);
 					leavesCounting++;
 
-					//nodeQueue[0].leavesIDs.push()
-					//nodeQueue[0].leavesIDs.push(startLeaves/3);
-					//console.log(nodeQueue[0].leavesIDs);
-
 					f32VerticesLeaves[startLeaves + 3] = secundPoint.x;
 					f32VerticesLeaves[startLeaves + 4] = secundPoint.y;
 					f32VerticesLeaves[startLeaves + 5] = secundPoint.z;
 					nodeQueue[0].leavesIDs.push(leavesCounting);
 					leavesCounting++
-					//nodeQueue[0].leavesIDs.push((startLeaves+3)/3);
-					//console.log(nodeQueue[0].leavesIDs);
 
 					f32VerticesLeaves[startLeaves + 6] = thirdPoint.x;
 					f32VerticesLeaves[startLeaves + 7] = thirdPoint.y;
 					f32VerticesLeaves[startLeaves + 8] = thirdPoint.z;
 					nodeQueue[0].leavesIDs.push(leavesCounting);
 					leavesCounting++
-					//nodeQueue[0].leavesIDs.push((startLeaves+6)/3);
-					//console.log(nodeQueue[0].leavesIDs);
 					startLeaves += 9
 				}
 
 			}
-
-
-
-
 
 			startVIdx += nodeQueue[0].verticesIDs.length * sectionLen * 3;
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
