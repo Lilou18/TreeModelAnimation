@@ -204,14 +204,23 @@ TP3.Render = {
 	drawTreeHermite: function (rootNode, scene, alpha, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
+		const leavesMaterial = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
+		leavesMaterial.side = THREE.DoubleSide;
 
 		const sectionsNum = rootNode.sections.length - 1;
 		const sectionLen = rootNode.sections[0].length;
 
 		const geometry = new THREE.BufferGeometry();
-		const f32vertices = this.initializeF32Vertex(rootNode);
+		let [f32vertices,f32Leaves] = this.initializeF32Vertex(rootNode,alpha,leavesCutoff,leavesDensity);
 		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
 		const facesIdx = [];
+		let compteur = 0;
+
+		const leaves = new THREE.BufferGeometry();
+		leaves.setAttribute("position", new THREE.BufferAttribute(f32Leaves,3));
+		const leavesIDx = [];
+
+
 
 		for (let i = 0; i < sectionLen - 2; i++) {
 			let v1Idx = rootNode.verticesIDs[0][i];
@@ -307,18 +316,54 @@ TP3.Render = {
 				}
 			}
 
+			// for(let h = 0; h < leavesDensity; h++){
+			// 	for(let g = 0; g < 3; g++){
+			// 		let indexPoint = h*3+g;
+			// 		leavesIDx.push(indexPoint);
+			// 	}
+			//
+			// }
+
+			if(node.childNode.length === 0){
+
+				compteur++;
+
+				for(let h = 0; h < leavesDensity; h++){
+
+					for(let g = 0; g < 3; g++){
+						let leaveFirstPoint = node.leavesIDs[h*3+g];
+						leavesIDx.push(leaveFirstPoint);
+					}
+
+				}
+			}
+
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
+
+		console.log(leavesIDx);
 
 		geometry.setIndex(facesIdx);
 		geometry.computeVertexNormals();
 		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
 		branchesMesh.castShadow = true;
 		scene.add(branchesMesh);
+
+		leaves.setIndex(leavesIDx);
+		leaves.computeVertexNormals();
+		const leavesMesh = new THREE.Mesh(leaves,leavesMaterial);
+		leavesMesh.castShadow = true;
+		scene.add(leavesMesh);
+
+
 	},
 
-	initializeF32Vertex: function(rootNode) {
+	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
+
+		let compteur = 0;
+		let compteur2 = 0;
+		let leavesCounting = 0;
 
 		let nodeQueue = [rootNode];
 		let nodeNum = 0;
@@ -334,7 +379,12 @@ TP3.Render = {
 		const sectionLen = rootNode.sections[0].length;
 		const f32vertices = new Float32Array(nodeNum * sectionsNum * sectionLen * 3);
 
+		const f32VerticesLeaves = new Float32Array(nodeNum*leavesDensity*3*3);
+		let test = nodeNum*leavesDensity*5;
+		const verticesLeaves = [];
+
 		let startVIdx = 0;
+		let startLeaves = 0;
 		while (nodeQueue.length > 0) {
 
 			nodeQueue[0].verticesIDs = [];
@@ -354,8 +404,13 @@ TP3.Render = {
 					}
 					nodeQueue[0].verticesIDs.push(sectionIDs);
 				}
+
 			}
-			else {
+			else{
+
+				if(nodeQueue[0].childNode.length === 0){
+					compteur2++;
+				}
 				for (let i = 0; i < sectionsNum - 1; i++) {
 
 					let sectionIDs = [];
@@ -372,21 +427,108 @@ TP3.Render = {
 				}
 			}
 
-			/*
-			for (let i = 0; i < nodeQueue[0].verticesIDs.length; i++) {
+			if(nodeQueue[0].a0 < alpha * leavesCutoff){
+				const nodeVector = vectorFromPoints(nodeQueue[0].p0,nodeQueue[0].p1)
+				const height = nodeVector.length();
+				let leavesID = [];
 
-				window.alert(nodeQueue[0].verticesIDs[i]);
+				for(let  k = 0; k < leavesDensity;k++) {
+					const firstPoint = new THREE.Vector3(0, 0, 0);
+					// alpha*alpha??????
+					const secundPoint = new THREE.Vector3(alpha, 0, 0);
+
+					// calculate the third Point
+					const thirdPointY = Math.sqrt((Math.pow(alpha, 2) - Math.pow(alpha / 2, 2)));
+					const thirdPoint = new THREE.Vector3(alpha / 2, thirdPointY, 0);
+
+					let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random());
+					let randAngle = Math.random()*2*Math.PI;
+
+					let matriceRotation = new THREE.Matrix4();
+					matriceRotation.makeRotationAxis(randAxis, randAngle);
+
+					firstPoint.applyMatrix4(matriceRotation);
+					secundPoint.applyMatrix4(matriceRotation);
+					thirdPoint.applyMatrix4(matriceRotation);
+
+
+					let randY;
+					if(nodeQueue[0].childNode.length === 0){
+						randY = getRandomInsideInterval(-height,height+alpha);
+					}
+					else{
+						randY = getRandomInsideInterval(-height,height)
+					}
+
+
+					let {x, z} = getRandomInsideDisk(alpha/2);
+
+					 let translationY = new THREE.Matrix4();
+					 translationY.makeTranslation(0,randY,0);
+
+					firstPoint.applyMatrix4(translationY);
+					secundPoint.applyMatrix4(translationY);
+					thirdPoint.applyMatrix4(translationY);
+
+					 let translationMatrix = new THREE.Matrix4();
+					 translationMatrix.makeTranslation(x,0,z);
+
+					 firstPoint.applyMatrix4(translationMatrix);
+					 secundPoint.applyMatrix4(translationMatrix);
+					 thirdPoint.applyMatrix4(translationMatrix);
+
+
+
+
+					let translationToBranch = new THREE.Matrix4();
+					translationToBranch.makeTranslation(nodeQueue[0].p0.x + nodeVector.x / 2, nodeQueue[0].p0.y + nodeVector.y / 2, nodeQueue[0].p0.z + nodeVector.z / 2)
+
+					firstPoint.applyMatrix4(translationToBranch);
+					secundPoint.applyMatrix4(translationToBranch);
+					thirdPoint.applyMatrix4(translationToBranch);
+
+					f32VerticesLeaves[startLeaves] = firstPoint.x
+					f32VerticesLeaves[startLeaves + 1] = firstPoint.y;
+					f32VerticesLeaves[startLeaves + 2] = firstPoint.z;
+					nodeQueue[0].leavesIDs.push(leavesCounting);
+					leavesCounting++;
+
+					//nodeQueue[0].leavesIDs.push()
+					//nodeQueue[0].leavesIDs.push(startLeaves/3);
+					//console.log(nodeQueue[0].leavesIDs);
+
+					f32VerticesLeaves[startLeaves + 3] = secundPoint.x;
+					f32VerticesLeaves[startLeaves + 4] = secundPoint.y;
+					f32VerticesLeaves[startLeaves + 5] = secundPoint.z;
+					nodeQueue[0].leavesIDs.push(leavesCounting);
+					leavesCounting++
+					//nodeQueue[0].leavesIDs.push((startLeaves+3)/3);
+					//console.log(nodeQueue[0].leavesIDs);
+
+					f32VerticesLeaves[startLeaves + 6] = thirdPoint.x;
+					f32VerticesLeaves[startLeaves + 7] = thirdPoint.y;
+					f32VerticesLeaves[startLeaves + 8] = thirdPoint.z;
+					nodeQueue[0].leavesIDs.push(leavesCounting);
+					leavesCounting++
+					//nodeQueue[0].leavesIDs.push((startLeaves+6)/3);
+					//console.log(nodeQueue[0].leavesIDs);
+					startLeaves += 9
+				}
+
 			}
 
-			window.alert("over");
-			*/
+
+
+
 
 			startVIdx += nodeQueue[0].verticesIDs.length * sectionLen * 3;
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
 
-		return f32vertices;
+		console.log(f32VerticesLeaves);
+
+		return [f32vertices,f32VerticesLeaves];
 	},
 
 	drawTreeHermiteRec: function(node, f32vertices, facesIdx, geometry, sectionsNum, sectionLen, startIdx, parentIdx) {

@@ -13,6 +13,7 @@ class Node {
 
 		this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
 		this.verticesIDs = null;
+		this.leavesIDs = [];
 	}
 }
 
