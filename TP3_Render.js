@@ -324,7 +324,7 @@ TP3.Render = {
 			//
 			// }
 
-			if(node.childNode.length === 0){
+			if(node.leavesIDs !== []){
 
 				compteur++;
 
