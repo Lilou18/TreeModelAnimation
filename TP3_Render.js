@@ -206,6 +206,7 @@ TP3.Render = {
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 		const leavesMaterial = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
 		leavesMaterial.side = THREE.DoubleSide;
+		const apples_material = new THREE.MeshPhongMaterial({color: 0x5F0B0B});
 
 		const sectionsNum = rootNode.sections.length - 1;
 		const sectionLen = rootNode.sections[0].length;
@@ -336,6 +337,53 @@ TP3.Render = {
 				}
 			}
 
+			// Si la branche est assez petite
+			if(node.a0 < alpha * leavesCutoff){
+				// Si la probabilité d'avoir une pomme est assez grande
+				if(applesProbability > Math.random()){
+
+					let radiusApple = alpha/2;
+					let apple = new THREE.SphereBufferGeometry(radiusApple);
+
+					const nodeVector = vectorFromPoints(node.p0,node.p1)
+					const height = nodeVector.length();
+
+					//let translationApple = new THREE.Matrix4();
+					// translationApple.makeTranslation(node.p1.x,node.p1.y,node.p1.z);
+					// apple.applyMatrix4(translationApple);
+
+					let randY;
+					// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
+					// doit être aléatoire.
+					if(node.childNode.length === 0){
+						randY = getRandomInsideInterval(-height,height+alpha);
+					}
+					else{
+						randY = getRandomInsideInterval(-height,height)
+					}
+
+					// Translation aléatoire en x et en z.
+					let {x, z} = getRandomInsideDisk(alpha/2);
+
+					let translationApple = new THREE.Matrix4();
+					translationApple.makeTranslation(x,randY,z);
+					apple.applyMatrix4(translationApple);
+
+
+					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
+					let translationToBranch = new THREE.Matrix4();
+					translationToBranch.makeTranslation(nodeQueue[0].p0.x + nodeVector.x / 2, nodeQueue[0].p0.y + nodeVector.y / 2, nodeQueue[0].p0.z + nodeVector.z / 2)
+
+					apple.applyMatrix4(translationToBranch);
+
+					apple.computeVertexNormals();
+					const applesMesh = new THREE.Mesh(apple,apples_material);
+					applesMesh.castShadow = true;
+					scene.add((applesMesh));
+
+				}
+			}
+
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
@@ -351,6 +399,7 @@ TP3.Render = {
 		const leavesMesh = new THREE.Mesh(leaves,leavesMaterial);
 		leavesMesh.castShadow = true;
 		scene.add(leavesMesh);
+
 
 
 	},
