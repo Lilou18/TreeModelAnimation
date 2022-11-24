@@ -214,12 +214,11 @@ TP3.Render = {
 		let [f32vertices,f32Leaves] = this.initializeF32Vertex(rootNode,alpha,leavesCutoff,leavesDensity);
 		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
 		const facesIdx = [];
-		let compteur = 0;
+
 
 		const leaves = new THREE.BufferGeometry();
 		leaves.setAttribute("position", new THREE.BufferAttribute(f32Leaves,3));
 		const leavesIDx = [];
-
 
 
 		for (let i = 0; i < sectionLen - 2; i++) {
@@ -324,9 +323,8 @@ TP3.Render = {
 			//
 			// }
 
-			if(node.leavesIDs !== []){
-
-				compteur++;
+			//if(node.a0 < alpha * leavesCutoff){
+			if(node.leavesIDs.length !== 0){
 
 				for(let h = 0; h < leavesDensity; h++){
 
@@ -341,8 +339,6 @@ TP3.Render = {
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
-
-		console.log(leavesIDx);
 
 		geometry.setIndex(facesIdx);
 		geometry.computeVertexNormals();
@@ -361,9 +357,8 @@ TP3.Render = {
 
 	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
 
-		let compteur = 0;
-		let compteur2 = 0;
 		let leavesCounting = 0;
+
 
 		let nodeQueue = [rootNode];
 		let nodeNum = 0;
@@ -408,9 +403,6 @@ TP3.Render = {
 			}
 			else{
 
-				if(nodeQueue[0].childNode.length === 0){
-					compteur2++;
-				}
 				for (let i = 0; i < sectionsNum - 1; i++) {
 
 					let sectionIDs = [];
@@ -433,6 +425,7 @@ TP3.Render = {
 				const nodeVector = vectorFromPoints(nodeQueue[0].p0,nodeQueue[0].p1)
 				const height = nodeVector.length();
 				let leavesID = [];
+
 
 				// Nous devons créer leavesDensity de feuilles. Afin d'avoir un triangle équilatéral nous prenons les
 				// coordonnées (0,0,0) (alpha,0,0) et (alpha/2,L,0) ou L est calculé grâce à pythagore et nous avons
@@ -524,7 +517,6 @@ TP3.Render = {
 			nodeQueue.splice(0,1);
 		}
 
-		console.log(f32VerticesLeaves);
 
 		return [f32vertices,f32VerticesLeaves];
 	},
