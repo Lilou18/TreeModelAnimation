@@ -41,6 +41,7 @@
       <workItem from="1669239922453" duration="3809000" />
       <workItem from="1669308508037" duration="2028000" />
       <workItem from="1669318379254" duration="3897000" />
+      <workItem from="1669388656461" duration="5428000" />
     </task>
     <servers />
   </component>
@@ -57,18 +58,6 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/TP3_Render.js</url>
-          <line>350</line>
-          <properties lambdaOrdinal="-1" />
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/IFT3355_TP3_A22$TP3_B2_RenderHermite_html.dat" NAME="TP3_B2_RenderHermite.html Coverage Results" MODIFIED="1669141662056" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="WipCoverageRunner" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />

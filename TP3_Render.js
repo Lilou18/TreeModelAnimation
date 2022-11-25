@@ -20,6 +20,42 @@ function getRandomInsideDisk(radius) {
 	}
 }
 
+function getRandomTranslation(node,alpha,nodeVector){
+
+	const height = nodeVector.length();
+
+	let randY;
+	// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
+	// doit être aléatoire.
+	if(node.childNode.length === 0){
+		randY = getRandomInsideInterval(-height,height+alpha);
+	}
+	else{
+		randY = getRandomInsideInterval(-height,height)
+	}
+
+	// Translation aléatoire en x et en z.
+	let {x, z} = getRandomInsideDisk(alpha/2);
+
+	let randomTranslationMatrix = new THREE.Matrix4();
+	randomTranslationMatrix.makeTranslation(x,randY,z);
+
+	return randomTranslationMatrix;
+}
+// Crée une matrice de rotation aléatoire
+function getRandomRotationMatrix(){
+	// Crée un axe aléatoire
+	let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random());
+	// Crée un angle aléatoire
+	let randAngle = Math.random()*2*Math.PI;
+
+	// Crée la matrice de rotation avec les composants aléatoires
+	let rotationMatrix = new THREE.Matrix4();
+	rotationMatrix.makeRotationAxis(randAxis, randAngle);
+
+	return rotationMatrix;
+}
+
 TP3.Render = {
 	drawTreeRough: function (rootNode, scene, alpha, radialDivisions = 8, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
@@ -204,8 +240,8 @@ TP3.Render = {
 	drawTreeHermite: function (rootNode, scene, alpha, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
-		const leavesMaterial = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
-		leavesMaterial.side = THREE.DoubleSide;
+		const leafMaterial = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
+		leafMaterial.side = THREE.DoubleSide;
 		const apples_material = new THREE.MeshPhongMaterial({color: 0x5F0B0B});
 
 		const sectionsNum = rootNode.sections.length - 1;
@@ -217,9 +253,12 @@ TP3.Render = {
 		const facesIdx = [];
 
 
-		const leaves = new THREE.BufferGeometry();
-		leaves.setAttribute("position", new THREE.BufferAttribute(f32Leaves,3));
+		const leaf = new THREE.BufferGeometry();
+		leaf.setAttribute("position", new THREE.BufferAttribute(f32Leaves,3));
 		const leavesIDx = [];
+
+		// Mesh arrays
+		let apples = [];
 
 
 		for (let i = 0; i < sectionLen - 2; i++) {
@@ -316,14 +355,6 @@ TP3.Render = {
 				}
 			}
 
-			// for(let h = 0; h < leavesDensity; h++){
-			// 	for(let g = 0; g < 3; g++){
-			// 		let indexPoint = h*3+g;
-			// 		leavesIDx.push(indexPoint);
-			// 	}
-			//
-			// }
-
 			//if(node.a0 < alpha * leavesCutoff){
 			if(node.leavesIDs.length !== 0){
 
@@ -341,34 +372,13 @@ TP3.Render = {
 			if(node.a0 < alpha * leavesCutoff){
 				// Si la probabilité d'avoir une pomme est assez grande
 				if(applesProbability > Math.random()){
-
-					let radiusApple = alpha/2;
-					let apple = new THREE.SphereBufferGeometry(radiusApple);
+					let apple = new THREE.SphereBufferGeometry(alpha/2);
 
 					const nodeVector = vectorFromPoints(node.p0,node.p1)
-					const height = nodeVector.length();
 
-					//let translationApple = new THREE.Matrix4();
-					// translationApple.makeTranslation(node.p1.x,node.p1.y,node.p1.z);
-					// apple.applyMatrix4(translationApple);
-
-					let randY;
-					// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
-					// doit être aléatoire.
-					if(node.childNode.length === 0){
-						randY = getRandomInsideInterval(-height,height+alpha);
-					}
-					else{
-						randY = getRandomInsideInterval(-height,height)
-					}
-
-					// Translation aléatoire en x et en z.
-					let {x, z} = getRandomInsideDisk(alpha/2);
-
-					let translationApple = new THREE.Matrix4();
-					translationApple.makeTranslation(x,randY,z);
-					apple.applyMatrix4(translationApple);
-
+					// Crée une matrice de translation aléatoire pour la pomme
+					let randomTranslationMatrix = getRandomTranslation(node,alpha,nodeVector);
+					apple.applyMatrix4(randomTranslationMatrix);
 
 					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
 					let translationToBranch = new THREE.Matrix4();
@@ -377,9 +387,12 @@ TP3.Render = {
 					apple.applyMatrix4(translationToBranch);
 
 					apple.computeVertexNormals();
-					const applesMesh = new THREE.Mesh(apple,apples_material);
-					applesMesh.castShadow = true;
-					scene.add((applesMesh));
+
+					apples.push(apple);
+
+					//const applesMesh = new THREE.Mesh(apple,apples_material);
+					//applesMesh.castShadow = true;
+					//scene.add((applesMesh));
 
 				}
 			}
@@ -394,13 +407,16 @@ TP3.Render = {
 		branchesMesh.castShadow = true;
 		scene.add(branchesMesh);
 
-		leaves.setIndex(leavesIDx);
-		leaves.computeVertexNormals();
-		const leavesMesh = new THREE.Mesh(leaves,leavesMaterial);
-		leavesMesh.castShadow = true;
-		scene.add(leavesMesh);
+		leaf.setIndex(leavesIDx);
+		leaf.computeVertexNormals();
+		const leafMesh = new THREE.Mesh(leaf,leafMaterial);
+		leafMesh.castShadow = true;
+		scene.add(leafMesh);
 
-
+		const mergedApples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples,false);
+		const applesMesh = new THREE.Mesh(mergedApples,apples_material);
+		applesMesh.castShadow = true;
+		scene.add(applesMesh);
 
 	},
 
@@ -472,9 +488,6 @@ TP3.Render = {
 			// les points de c'est feuilles.
 			if(nodeQueue[0].a0 < alpha * leavesCutoff){
 				const nodeVector = vectorFromPoints(nodeQueue[0].p0,nodeQueue[0].p1)
-				const height = nodeVector.length();
-				let leavesID = [];
-
 
 				// Nous devons créer leavesDensity de feuilles. Afin d'avoir un triangle équilatéral nous prenons les
 				// coordonnées (0,0,0) (alpha,0,0) et (alpha/2,L,0) ou L est calculé grâce à pythagore et nous avons
@@ -489,46 +502,20 @@ TP3.Render = {
 					const thirdPointY = Math.sqrt((Math.pow(alpha, 2) - Math.pow(alpha / 2, 2)));
 					const thirdPoint = new THREE.Vector3(alpha / 2, thirdPointY, 0);
 
-					// Rotation aléatoire
-					let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random());
-					let randAngle = Math.random()*2*Math.PI;
+					// Crée une matrice de rotation aléatoire
+					let rotationMatrix = getRandomRotationMatrix();
 
-					let matriceRotation = new THREE.Matrix4();
-					matriceRotation.makeRotationAxis(randAxis, randAngle);
+					firstPoint.applyMatrix4(rotationMatrix);
+					secundPoint.applyMatrix4(rotationMatrix);
+					thirdPoint.applyMatrix4(rotationMatrix);
 
-					firstPoint.applyMatrix4(matriceRotation);
-					secundPoint.applyMatrix4(matriceRotation);
-					thirdPoint.applyMatrix4(matriceRotation);
+					// Crée une matrice de translation aléatoire
+					let randomTranslationMatrix = new THREE.Matrix4();
+					randomTranslationMatrix = getRandomTranslation(nodeQueue[0],alpha,nodeVector)
 
-
-					let randY;
-					// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
-					// doit être aléatoire.
-					if(nodeQueue[0].childNode.length === 0){
-						randY = getRandomInsideInterval(-height,height+alpha);
-					}
-					else{
-						randY = getRandomInsideInterval(-height,height)
-					}
-
-					// Translation aléatoire en x et en z.
-					let {x, z} = getRandomInsideDisk(alpha/2);
-
-					 let translationY = new THREE.Matrix4();
-					 translationY.makeTranslation(0,randY,0);
-
-					firstPoint.applyMatrix4(translationY);
-					secundPoint.applyMatrix4(translationY);
-					thirdPoint.applyMatrix4(translationY);
-
-					 let translationMatrix = new THREE.Matrix4();
-					 translationMatrix.makeTranslation(x,0,z);
-
-					 firstPoint.applyMatrix4(translationMatrix);
-					 secundPoint.applyMatrix4(translationMatrix);
-					 thirdPoint.applyMatrix4(translationMatrix);
-
-
+					firstPoint.applyMatrix4(randomTranslationMatrix);
+					secundPoint.applyMatrix4(randomTranslationMatrix);
+					thirdPoint.applyMatrix4(randomTranslationMatrix);
 
 					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
 					let translationToBranch = new THREE.Matrix4();
