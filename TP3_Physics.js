@@ -57,6 +57,8 @@ TP3.Physics = {
 
 		// TODO: Projection du mouvement, force de restitution et amortissement de la velocite
 
+		node.p0Prev = new THREE.Vector3(node.p0.x, node.p0.y, node.p0.z);
+
 		// Apply the parent's transformation on the points of the current node
 		if (node.parentNode) {
 
@@ -126,9 +128,9 @@ TP3.Physics = {
 
 		let pt = new THREE.Vector3(node.p1.x, node.p1.y, node.p1.z).applyMatrix4(rotation2);
 
-		let restitution = new THREE.Vector3(pt.x - node.p1.x,
-			                                pt.y - node.p1.y,
-			                                pt.z - node.p1.z).multiplyScalar(node.a0 * 1000);
+		let restitution = new THREE.Vector3(vectorF.x + pt.x - node.p0.x,
+			                                vectorF.y + pt.y - node.p0.y,
+			                                vectorF.z + pt.z - node.p0.z).multiplyScalar(node.a0 * 1000);
 
 		node.vel.add(restitution).multiplyScalar(0.7);
 
