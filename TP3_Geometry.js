@@ -6,6 +6,8 @@ class Node {
 		this.p0 = null; //Position de depart de la branche
 		this.p1 = null; //Position finale de la branche
 
+		this.p0Prev = null;
+
 		this.a0 = null; //Rayon de la branche a p0
 		this.a1 = null; //Rayon de la branche a p1
 

@@ -404,20 +404,23 @@ TP3.Render = {
 		geometry.setIndex(facesIdx);
 		geometry.computeVertexNormals();
 		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
+		//const leavesMesh = 5;
+		//const applesMesh = 6;
 		branchesMesh.castShadow = true;
 		scene.add(branchesMesh);
 
 		leaf.setIndex(leavesIDx);
 		leaf.computeVertexNormals();
-		const leafMesh = new THREE.Mesh(leaf,leafMaterial);
-		leafMesh.castShadow = true;
-		scene.add(leafMesh);
+		const leavesMesh = new THREE.Mesh(leaf,leafMaterial);
+		leavesMesh.castShadow = true;
+		scene.add(leavesMesh);
 
 		const mergedApples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples,false);
 		const applesMesh = new THREE.Mesh(mergedApples,apples_material);
 		applesMesh.castShadow = true;
 		scene.add(applesMesh);
 
+		return [geometry, leavesMesh, applesMesh];
 	},
 
 	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
@@ -557,12 +560,47 @@ TP3.Render = {
 		return [f32vertices,f32VerticesLeaves];
 	},
 
-	drawTreeHermiteRec: function(node, f32vertices, facesIdx, geometry, sectionsNum, sectionLen, startIdx, parentIdx) {
-		//TODO
-	},
+	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, applesGeometryBuffer, rootNode) {
 
-	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, rootNode) {
-		//TODO
+		const sectionsNum = rootNode.sections.length - 1;
+		const sectionLen = rootNode.sections[0].length;
+
+		let nodeQueue = rootNode.childNode;
+		while (nodeQueue.length > 0) {
+
+			let node = nodeQueue[0];
+
+			for (let i = 0; i < sectionsNum; i++) {
+				for (let j = 0; j < sectionLen; j++) {
+
+					const vertexXIdx = node.verticesIDs[i][j] * 3;
+					const vertexYIdx = vertexXIdx + 1;
+					const vertexZIdx = vertexXIdx + 2;
+
+					let vertex = new THREE.Vector3(trunkGeometryBuffer[vertexXIdx],
+						                           trunkGeometryBuffer[vertexYIdx],
+						                           trunkGeometryBuffer[vertexZIdx]);
+
+					const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
+						                                                    -node.p0Prev.y,
+						                                                    -node.p0Prev.z);
+					const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
+						                                                        node.p0.y,
+						                                                        node.p0.z);
+
+					vertex.applyMatrix4(translation);
+					vertex.applyMatrix4(node.transform);
+					vertex.applyMatrix4(translationBack);
+
+					trunkGeometryBuffer[vertexXIdx] = vertex.x;
+					trunkGeometryBuffer[vertexYIdx] = vertex.y;
+					trunkGeometryBuffer[vertexZIdx] = vertex.z;
+				}
+			}
+
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
 	},
 
 	drawTreeSkeleton: function (rootNode, scene, color = 0xffffff, matrix = new THREE.Matrix4()) {
