@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="5d44f05f-0578-4ead-afe2-3f0c11b5d6d9" name="Changes" comment="" />
+    <list default="true" id="5d44f05f-0578-4ead-afe2-3f0c11b5d6d9" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TP3_C2_HermiteAnimate.html" beforeDir="false" afterPath="$PROJECT_DIR$/TP3_C2_HermiteAnimate.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TP3_Physics.js" beforeDir="false" afterPath="$PROJECT_DIR$/TP3_Physics.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TP3_Render.js" beforeDir="false" afterPath="$PROJECT_DIR$/TP3_Render.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -56,6 +61,18 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/TP3_Render.js</url>
+          <line>425</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/IFT3355_TP3_A22$TP3_B2_RenderHermite_html.dat" NAME="TP3_B2_RenderHermite.html Coverage Results" MODIFIED="1669141662056" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="WipCoverageRunner" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />

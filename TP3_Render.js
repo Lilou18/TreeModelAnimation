@@ -420,7 +420,10 @@ TP3.Render = {
 		applesMesh.castShadow = true;
 		scene.add(applesMesh);
 
-		return [geometry, leavesMesh, applesMesh];
+		//let leavesMesh = 5;
+		//let applesMesh = 6;
+
+		return [geometry, leavesMesh, applesMesh.geometry];
 	},
 
 	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {

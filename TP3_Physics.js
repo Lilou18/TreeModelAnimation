@@ -126,11 +126,11 @@ TP3.Physics = {
 		const [axis2, angle2] = TP3.Geometry.findRotation(vectorF, vectorI);
 		const rotation2 = new THREE.Matrix4().makeRotationAxis(axis2, angle2 ** 2);
 
-		let pt = new THREE.Vector3(node.p1.x, node.p1.y, node.p1.z).applyMatrix4(rotation2);
+		let pt = new THREE.Vector3(vectorF.x, vectorF.y, vectorF.z).applyMatrix4(rotation2);
 
-		let restitution = new THREE.Vector3(vectorF.x + pt.x - node.p0.x,
-			                                vectorF.y + pt.y - node.p0.y,
-			                                vectorF.z + pt.z - node.p0.z).multiplyScalar(node.a0 * 1000);
+		let restitution = new THREE.Vector3(pt.x - vectorF.x,
+			                                pt.y - vectorF.y,
+			                                pt.z - vectorF.z).multiplyScalar(node.a0 * 1000);
 
 		node.vel.add(restitution).multiplyScalar(0.7);
 
