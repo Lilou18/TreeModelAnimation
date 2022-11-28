@@ -423,7 +423,8 @@ TP3.Render = {
 		//let leavesMesh = 5;
 		//let applesMesh = 6;
 
-		return [geometry, leavesMesh, applesMesh.geometry];
+		//return [geometry, leavesMesh, applesMesh.geometry];
+		return [branchesMesh.geometry,leavesMesh.geometry,applesMesh.geometry]
 	},
 
 	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
