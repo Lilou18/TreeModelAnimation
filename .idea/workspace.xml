@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="5d44f05f-0578-4ead-afe2-3f0c11b5d6d9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TP3_Geometry.js" beforeDir="false" afterPath="$PROJECT_DIR$/TP3_Geometry.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TP3_Render.js" beforeDir="false" afterPath="$PROJECT_DIR$/TP3_Render.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -43,7 +44,7 @@
       <workItem from="1669308508037" duration="2028000" />
       <workItem from="1669318379254" duration="3897000" />
       <workItem from="1669388656461" duration="5428000" />
-      <workItem from="1669676728235" duration="362000" />
+      <workItem from="1669676728235" duration="9812000" />
     </task>
     <servers />
   </component>
@@ -60,6 +61,24 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/TP3_Render.js</url>
+          <line>616</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/TP3_Render.js</url>
+          <line>574</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/IFT3355_TP3_A22$TP3_B2_RenderHermite_html.dat" NAME="TP3_B2_RenderHermite.html Coverage Results" MODIFIED="1669141662056" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="WipCoverageRunner" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />

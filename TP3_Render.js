@@ -45,7 +45,7 @@ function getRandomTranslation(node,alpha,nodeVector){
 // Crée une matrice de rotation aléatoire
 function getRandomRotationMatrix(){
 	// Crée un axe aléatoire
-	let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random());
+	let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random()).normalize();
 	// Crée un angle aléatoire
 	let randAngle = Math.random()*2*Math.PI;
 
@@ -259,6 +259,7 @@ TP3.Render = {
 
 		// Mesh arrays
 		let apples = [];
+		let numberOfApples = 0;
 
 
 		for (let i = 0; i < sectionLen - 2; i++) {
@@ -390,6 +391,9 @@ TP3.Render = {
 
 					apples.push(apple);
 
+					node.applesIds.push(numberOfApples);
+					numberOfApples++;
+
 					//const applesMesh = new THREE.Mesh(apple,apples_material);
 					//applesMesh.castShadow = true;
 					//scene.add((applesMesh));
@@ -430,6 +434,7 @@ TP3.Render = {
 	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
 
 		let leavesCounting = 0;
+
 
 
 		let nodeQueue = [rootNode];
@@ -494,6 +499,7 @@ TP3.Render = {
 			// Si la branche est assez petite pour contenir des feuilles on crée
 			// les points de c'est feuilles.
 			if(nodeQueue[0].a0 < alpha * leavesCutoff){
+
 				const nodeVector = vectorFromPoints(nodeQueue[0].p0,nodeQueue[0].p1)
 
 				// Nous devons créer leavesDensity de feuilles. Afin d'avoir un triangle équilatéral nous prenons les
@@ -568,6 +574,7 @@ TP3.Render = {
 
 		const sectionsNum = rootNode.sections.length - 1;
 		const sectionLen = rootNode.sections[0].length;
+		//let leavesCoordsCounting = 0;
 
 		let nodeQueue = rootNode.childNode;
 		while (nodeQueue.length > 0) {
@@ -599,8 +606,44 @@ TP3.Render = {
 					trunkGeometryBuffer[vertexXIdx] = vertex.x;
 					trunkGeometryBuffer[vertexYIdx] = vertex.y;
 					trunkGeometryBuffer[vertexZIdx] = vertex.z;
+
 				}
 			}
+
+			if(node.leavesIDs.length !== 0){
+
+					for(let h = 0; h < leavesDensity * 3; h++){
+
+						const leavesVertexXIdX = node.leavesIDs[h]*3;
+						const leavesVertexXIdY = leavesVertexXIdX + 1;
+						const leavesVertexXIdZ = leavesVertexXIdX + 2;
+
+						//console.log(leavesGeometryBuffer[leavesVertexXIdX]);
+
+						let leavesVertex =  new THREE.Vector3(leavesGeometryBuffer[leavesVertexXIdX],
+							                                  leavesGeometryBuffer[leavesVertexXIdY],
+							                                  leavesGeometryBuffer[leavesVertexXIdZ]);
+
+						const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
+							-node.p0Prev.y,
+							-node.p0Prev.z);
+						const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
+							node.p0.y,
+							node.p0.z);
+
+
+						leavesVertex.applyMatrix4(translation);
+						leavesVertex.applyMatrix4(node.transform);
+						leavesVertex.applyMatrix4(translationBack);
+
+						leavesGeometryBuffer[leavesVertexXIdX] = leavesVertex.x;
+						leavesGeometryBuffer[leavesVertexXIdY] = leavesVertex.y;
+						leavesGeometryBuffer[leavesVertexXIdZ] = leavesVertex.z;
+
+					}
+
+			}
+
 
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
