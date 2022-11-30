@@ -394,6 +394,11 @@ TP3.Render = {
 					node.applesIds.push(numberOfApples);
 					numberOfApples++;
 
+					node.numberOfPOintsApples = apple.attributes.position.length /3;
+					//node.indexApples = apple.index.array;
+
+					//let longueur = apple.index.length;
+					//console.log(longueur);
 					//const applesMesh = new THREE.Mesh(apple,apples_material);
 					//applesMesh.castShadow = true;
 					//scene.add((applesMesh));
@@ -576,6 +581,10 @@ TP3.Render = {
 		const sectionLen = rootNode.sections[0].length;
 		//let leavesCoordsCounting = 0;
 
+		let nombrePommes = 0;
+		let first = false;
+		let applesIndex = 0;
+
 		let nodeQueue = rootNode.childNode;
 		while (nodeQueue.length > 0) {
 
@@ -644,10 +653,54 @@ TP3.Render = {
 
 			}
 
+			if(node.applesIds.length !== 0){
+
+				nombrePommes++;
+				if(first === false){
+					console.log(node.numberOfPOintsApples);
+					first = true;
+				}
+
+
+				for(let g = 0; g < node.numberOfPOintsApples;g++){
+
+					const applesVertexXIdX = applesIndex//node.leavesIDs[h]*3;
+					const applesVertexXIdY = applesVertexXIdX + 1;
+					const applesVertexXIdZ = applesVertexXIdX + 2;
+					applesIndex += 3
+
+					let applesVertex =  new THREE.Vector3(applesGeometryBuffer[applesVertexXIdX],
+						applesGeometryBuffer[applesVertexXIdY],
+						applesGeometryBuffer[applesVertexXIdZ]);
+
+					const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
+						-node.p0Prev.y,
+						-node.p0Prev.z);
+					const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
+						node.p0.y,
+						node.p0.z);
+
+
+					applesVertex.applyMatrix4(translation);
+					applesVertex.applyMatrix4(node.transform);
+					applesVertex.applyMatrix4(translationBack);
+
+					applesGeometryBuffer[applesVertexXIdX] = applesVertex.x;
+					applesGeometryBuffer[applesVertexXIdY] = applesVertex.y;
+					applesGeometryBuffer[applesVertexXIdZ] = applesVertex.z;
+
+
+				}
+
+			}
+
 
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
 			nodeQueue.splice(0,1);
 		}
+		//console.log(nodeQueue.numberOfPOintsApples);
+		console.log(nombrePommes);
+		console.log(applesGeometryBuffer.length);
 	},
 
 	drawTreeSkeleton: function (rootNode, scene, color = 0xffffff, matrix = new THREE.Matrix4()) {

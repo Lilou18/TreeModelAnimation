@@ -17,6 +17,8 @@ class Node {
 		this.verticesIDs = null;
 		this.leavesIDs = [];
 		this.applesIds = [];
+		this.numberOfPOintsApples = 0;
+		this.indexApples = null;
 	}
 }
 

@@ -44,7 +44,9 @@
       <workItem from="1669308508037" duration="2028000" />
       <workItem from="1669318379254" duration="3897000" />
       <workItem from="1669388656461" duration="5428000" />
-      <workItem from="1669676728235" duration="9812000" />
+      <workItem from="1669676728235" duration="10681000" />
+      <workItem from="1669731477980" duration="4888000" />
+      <workItem from="1669776581910" duration="3762000" />
     </task>
     <servers />
   </component>
@@ -67,15 +69,21 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/TP3_Render.js</url>
-          <line>616</line>
+          <line>659</line>
           <properties lambdaOrdinal="-1" />
-          <option name="timeStamp" value="1" />
+          <option name="timeStamp" value="16" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/TP3_Render.js</url>
-          <line>574</line>
+          <line>701</line>
           <properties lambdaOrdinal="-1" />
-          <option name="timeStamp" value="3" />
+          <option name="timeStamp" value="17" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/TP3_Render.js</url>
+          <line>702</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="18" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
