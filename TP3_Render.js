@@ -22,16 +22,16 @@ function getRandomInsideDisk(radius) {
 
 function getRandomTranslation(node,alpha,nodeVector){
 
-	const height = nodeVector.length();
+	const halfHeight = nodeVector.length()/2;
 
 	let randY;
 	// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
 	// doit être aléatoire.
 	if(node.childNode.length === 0){
-		randY = getRandomInsideInterval(-height,height+alpha);
+		randY = getRandomInsideInterval(-halfHeight, halfHeight + alpha);
 	}
 	else{
-		randY = getRandomInsideInterval(-height,height)
+		randY = getRandomInsideInterval(-halfHeight, halfHeight)
 	}
 
 	// Translation aléatoire en x et en z.
@@ -44,13 +44,19 @@ function getRandomTranslation(node,alpha,nodeVector){
 }
 // Crée une matrice de rotation aléatoire
 function getRandomRotationMatrix(){
+
 	// Crée un axe aléatoire
-	let randAxis = new THREE.Vector3(Math.random(),Math.random(),Math.random()).normalize();
+    const theta = Math.random() * 2 * Math.PI;
+    const phi = Math.random() * Math.PI;
+	const randAxis = new THREE.Vector3(Math.sin(phi) * Math.sin(theta),
+                                       Math.cos(phi),
+                                       Math.sin(phi) * Math.cos(theta));
+
 	// Crée un angle aléatoire
-	let randAngle = Math.random()*2*Math.PI;
+	const randAngle = Math.random() * 2 * Math.PI;
 
 	// Crée la matrice de rotation avec les composants aléatoires
-	let rotationMatrix = new THREE.Matrix4();
+	const rotationMatrix = new THREE.Matrix4();
 	rotationMatrix.makeRotationAxis(randAxis, randAngle);
 
 	return rotationMatrix;
