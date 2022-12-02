@@ -535,11 +535,15 @@ TP3.Render = {
 
 					// Crée une matrice de translation aléatoire
 					let randomTranslationMatrix = new THREE.Matrix4();
-					randomTranslationMatrix = getRandomTranslation(nodeQueue[0],alpha,nodeVector)
+					randomTranslationMatrix = getRandomTranslation(nodeQueue[0],alpha,nodeVector);
 
 					firstPoint.applyMatrix4(randomTranslationMatrix);
 					secundPoint.applyMatrix4(randomTranslationMatrix);
 					thirdPoint.applyMatrix4(randomTranslationMatrix);
+
+					firstPoint.applyMatrix4(nodeQueue[0].transform);
+					secundPoint.applyMatrix4(nodeQueue[0].transform);
+					thirdPoint.applyMatrix4(nodeQueue[0].transform);
 
 					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
 					let translationToBranch = new THREE.Matrix4();
