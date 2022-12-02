@@ -20,58 +20,89 @@ function getRandomInsideDisk(radius) {
 	}
 }
 
+function getRandomTranslation(node,alpha,nodeVector){
+
+	const halfHeight = nodeVector.length()/2;
+
+	let randY;
+	// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
+	// doit être aléatoire.
+	if(node.childNode.length === 0){
+		randY = getRandomInsideInterval(-halfHeight, halfHeight + alpha);
+	}
+	else{
+		randY = getRandomInsideInterval(-halfHeight, halfHeight)
+	}
+
+	// Translation aléatoire en x et en z.
+	let {x, z} = getRandomInsideDisk(alpha/2);
+
+	let randomTranslationMatrix = new THREE.Matrix4();
+	randomTranslationMatrix.makeTranslation(x,randY,z);
+
+	return randomTranslationMatrix;
+}
+// Crée une matrice de rotation aléatoire
+function getRandomRotationMatrix(){
+
+	// Crée un axe aléatoire
+    const theta = Math.random() * 2 * Math.PI;
+    const phi = Math.random() * Math.PI;
+	const randAxis = new THREE.Vector3(Math.sin(phi) * Math.sin(theta),
+                                       Math.cos(phi),
+                                       Math.sin(phi) * Math.cos(theta));
+
+	// Crée un angle aléatoire
+	const randAngle = Math.random() * 2 * Math.PI;
+
+	// Crée la matrice de rotation avec les composants aléatoires
+	const rotationMatrix = new THREE.Matrix4();
+	rotationMatrix.makeRotationAxis(randAxis, randAngle);
+
+	return rotationMatrix;
+}
 
 TP3.Render = {
 	drawTreeRough: function (rootNode, scene, alpha, radialDivisions = 8, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
-		rootNode = TP3.Geometry.simplifySkeleton(rootNode);
-
 		// Material
-		const leaves_material = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
-		leaves_material.side = THREE.DoubleSide;
-		const apples_material = new THREE.MeshPhongMaterial({color: 0x5F0B0B});
-		const branches_material = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
+		const leafMaterial = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
+		leafMaterial.side = THREE.DoubleSide;
+		const appleMaterial = new THREE.MeshPhongMaterial({color: 0x5F0B0B});
+		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
 
 		// Mesh arrays
 		let branches = [];
 		let apples = [];
 		let leaves = [];
 
-		// Fonction récursive à utiliser pour le parcours de l'arbre
-		function drawNodeRough(node, matrix) {
-			/**
-			 * Function that generates meshes and saves them to appropriate array.
-			 * Three elements to generates : branch, apple, leaves
-			 *
-			 * @param {Node} node The actual node of the tree.
-			 * @param {THREE.Matrix4} matrix Transformation matrix up to this node
-			 */
+		let nodeQueue = [rootNode];
+		while (nodeQueue.length > 0) {
 
+			node = nodeQueue[0];
 			const nodeVector = vectorFromPoints(node.p0, node.p1);
-			const height = nodeVector.length();
 
 			const radiusTop = node.a1;
 			const radiusBottom = node.a0;
+			const height = nodeVector.length();
 			const radialSegments = radialDivisions;
 			const heightSegments = 1;
 
-			const cylinder_geometry = new THREE.CylinderBufferGeometry(
+			const branchGeometry = new THREE.CylinderBufferGeometry(
 				radiusTop,
 				radiusBottom,
 				height,
 				radialSegments,
 				heightSegments
-			)
+			);
 
-			// Calcul des facteurs de translation et rotation
-
-			// values for rootNode
 			let angle = 0;
 			let axis = new THREE.Vector3(1, 0, 0);
 			let parentVector = new THREE.Vector3(0,0,0);
+			let parentTransform = matrix;
 
 			if (node.parentNode) {
-				// not rootNode
+
 				parentVector = new THREE.Vector3(
 					node.parentNode.p1.x - node.parentNode.p0.x,
 					node.parentNode.p1.y - node.parentNode.p0.y,
@@ -79,52 +110,27 @@ TP3.Render = {
 				);
 				angle = nodeVector.angleTo(parentVector);
 				axis.crossVectors(nodeVector, parentVector).normalize();
+				parentTransform = node.parentNode.transform;
 			}
 
-			// // Matrices de transformation
-			// const translation = new THREE.Matrix4();
-			// translation.makeTranslation(0, nodeVector.length()/2 + parentVector.length()/2, 0);
-			//
-			// const translationToPivot = new THREE.Matrix4();
-			// translationToPivot.makeTranslation(0,-nodeVector.length()/2,0);
-			//
-			// const rotation = new THREE.Matrix4();
-			// rotation.makeRotationAxis(axis, angle);
-			//
-			// const translationBack = new THREE.Matrix4();
-			// translationBack.makeTranslation(0,nodeVector.length()/2,0);
-			//
-			// // Transformation matrix
-			// const new_matrix = new THREE.Matrix4();
-			// new_matrix.multiplyMatrices(matrix,translation);
-			// new_matrix.multiplyMatrices(new_matrix,translationToPivot);
-			// new_matrix.multiplyMatrices(new_matrix,rotation);
-			// new_matrix.multiplyMatrices(new_matrix,translationBack);
+			const translationAboveGround = new THREE.Matrix4();
+			translationAboveGround.makeTranslation(0, height/2, 0);
 
-
-			// Matrices de transformation ( REFACTORED )
-
-			// positionne le pivot sur p0 (bottom of cylinder)
-			const translation_to_p0 = new THREE.Matrix4();
-			translation_to_p0.makeTranslation(0, height/2, 0);
-
-			// pivote la branche autour de p0
 			const rotation = new THREE.Matrix4();
 			rotation.makeRotationAxis(axis, angle);
 
-			// pousse la branche au bout de son parent (joint p0 node et p1 du parent)
-			const translation_to_parent_p1 = new THREE.Matrix4();
-			translation_to_parent_p1.makeTranslation(0, parentVector.length()/2, 0);
+			const translationAboveParent = new THREE.Matrix4();
+			translationAboveParent.makeTranslation(0, parentVector.length()/2, 0);
 
-			// Transformation matrix to apply on cylinder_geometry
-			const new_matrix = new THREE.Matrix4();
-			new_matrix.multiplyMatrices(translation_to_p0,new_matrix);
-			new_matrix.multiplyMatrices(rotation,new_matrix);
-			new_matrix.multiplyMatrices(translation_to_parent_p1,new_matrix);
-			new_matrix.multiplyMatrices(matrix,new_matrix);
+			let transform = new THREE.Matrix4();
+			transform.multiplyMatrices(translationAboveGround,transform);
+			transform.multiplyMatrices(rotation,transform);
+			transform.multiplyMatrices(translationAboveParent,transform);
+			transform.multiplyMatrices(parentTransform,transform);
 
-			cylinder_geometry.applyMatrix4(new_matrix);
-			branches.push(cylinder_geometry);
+			node.transform = transform;
+			branchGeometry.applyMatrix4(transform);
+			branches.push(branchGeometry);
 
 			// LEAVES (PlaneBufferGeometry)
 			if (node.a0 < alpha * leavesCutoff) {
@@ -167,7 +173,7 @@ TP3.Render = {
 					leave_matrix.multiplyMatrices(rotation_itself,leave_matrix);
 					leave_matrix.multiplyMatrices(axial_translation,leave_matrix);
 					leave_matrix.multiplyMatrices(radial_translation,leave_matrix);
-					leave_matrix.multiplyMatrices(new_matrix,leave_matrix);
+					leave_matrix.multiplyMatrices(transform,leave_matrix);
 
 					plane_geometry.applyMatrix4(leave_matrix);
 
@@ -205,7 +211,7 @@ TP3.Render = {
 					apple_matrix.multiplyMatrices(rotation_itself,apple_matrix);
 					apple_matrix.multiplyMatrices(axial_translation,apple_matrix);
 					apple_matrix.multiplyMatrices(radial_translation,apple_matrix);
-					apple_matrix.multiplyMatrices(new_matrix,apple_matrix);
+					apple_matrix.multiplyMatrices(transform,apple_matrix);
 
 					cube_geometry.applyMatrix4(apple_matrix);
 
@@ -214,42 +220,497 @@ TP3.Render = {
 
 			}
 
-			// Recursion
-			for (let i = 0; i < node.childNode.length; i++) {
-					drawNodeRough(node.childNode[i], new_matrix);
-			}
-
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
 		}
 
-		// Parcours de l'arbre SIMPLIFIÉ à partir de la racine
-		drawNodeRough(rootNode, matrix);
-
 		// mergeBufferGeometries
-		const merged_branches = THREE.BufferGeometryUtils.mergeBufferGeometries(branches, false);
-		const branches_mesh = new THREE.Mesh(merged_branches, branches_material);
-		branches_mesh.castShadow = true;
+		const mergedBranches = THREE.BufferGeometryUtils.mergeBufferGeometries(branches, false);
+		const branchesMesh = new THREE.Mesh(mergedBranches, branchMaterial);
+		branchesMesh.castShadow = true;
 
-		const merged_apples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples, false);
-		const apples_mesh = new THREE.Mesh(merged_apples, apples_material);
-		apples_mesh.castShadow = true;
+		const mergedApples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples, false);
+		const applesMesh = new THREE.Mesh(mergedApples, appleMaterial);
+		applesMesh.castShadow = true;
 
-		const merged_leaves = THREE.BufferGeometryUtils.mergeBufferGeometries(leaves, false);
-		const leaves_mesh = new THREE.Mesh(merged_leaves, leaves_material);
-		leaves_mesh.castShadow = true;
+		const mergedLeaves = THREE.BufferGeometryUtils.mergeBufferGeometries(leaves, false);
+		const leavesMesh = new THREE.Mesh(mergedLeaves, leafMaterial);
+		leavesMesh.castShadow = true;
 
 		// Add to scene
-		scene.add(branches_mesh);
-		scene.add(apples_mesh);
-		scene.add(leaves_mesh);
-
+		scene.add(branchesMesh);
+		scene.add(applesMesh);
+		scene.add(leavesMesh);
 	},
 
 	drawTreeHermite: function (rootNode, scene, alpha, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
-		//TODO
+
+		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
+		const leafMaterial = new THREE.MeshPhongMaterial({color: 0x3A5F0B});
+		leafMaterial.side = THREE.DoubleSide;
+		const apples_material = new THREE.MeshPhongMaterial({color: 0x5F0B0B});
+
+		const sectionsNum = rootNode.sections.length - 1;
+		const sectionLen = rootNode.sections[0].length;
+
+		const geometry = new THREE.BufferGeometry();
+		let [f32vertices,f32Leaves] = this.initializeF32Vertex(rootNode,alpha,leavesCutoff,leavesDensity);
+		geometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3));
+		const facesIdx = [];
+
+
+		const leaf = new THREE.BufferGeometry();
+		leaf.setAttribute("position", new THREE.BufferAttribute(f32Leaves,3));
+		const leavesIDx = [];
+
+		// Mesh arrays
+		let apples = [];
+		let numberOfApples = 0;
+
+
+		for (let i = 0; i < sectionLen - 2; i++) {
+			let v1Idx = rootNode.verticesIDs[0][i];
+			let v2Idx = rootNode.verticesIDs[0][i + 1];
+			let v3Idx = rootNode.verticesIDs[0][sectionLen - 1];
+			facesIdx.push(v1Idx, v2Idx, v3Idx);
+		}
+
+		let v1Idx = rootNode.verticesIDs[0][sectionLen - 1];
+		let v2Idx = rootNode.verticesIDs[0][0];
+		let v3Idx = rootNode.verticesIDs[1][0];
+		let v4Idx = rootNode.verticesIDs[1][sectionLen - 1];
+
+		for (let i = 0; i < sectionsNum; i++) {
+			for (let j = 0; j < sectionLen; j++) {
+
+				facesIdx.push(v1Idx, v2Idx, v3Idx);
+				facesIdx.push(v1Idx, v3Idx, v4Idx);
+
+				if (j !== sectionLen - 1) {
+					v1Idx = rootNode.verticesIDs[i][j];
+					v2Idx = rootNode.verticesIDs[i][j + 1];
+					v3Idx = rootNode.verticesIDs[i + 1][j + 1];
+					v4Idx = rootNode.verticesIDs[i + 1][j];
+				}
+			}
+
+			if (i !== sectionsNum - 1) {
+				v1Idx = rootNode.verticesIDs[i + 1][sectionLen - 1];
+				v2Idx = rootNode.verticesIDs[i + 1][0];
+				v3Idx = rootNode.verticesIDs[i + 2][0];
+				v4Idx = rootNode.verticesIDs[i + 2][sectionLen - 1];
+			}
+		}
+
+		let nodeQueue = rootNode.childNode;
+		while (nodeQueue.length > 0) {
+
+			let node = nodeQueue[0];
+			let parentVertices = node.parentNode.verticesIDs[node.parentNode.verticesIDs.length - 1];
+
+			let v1Idx = parentVertices[sectionLen - 1];
+			let v2Idx = parentVertices[0];
+			let v3Idx = node.verticesIDs[0][0];
+			let v4Idx = node.verticesIDs[0][sectionLen - 1];
+
+			for (let i = 0; i < sectionLen; i++) {
+
+				facesIdx.push(v1Idx, v2Idx, v3Idx);
+				facesIdx.push(v1Idx, v3Idx, v4Idx);
+
+				if (i !== sectionLen - 1) {
+					v1Idx = parentVertices[i];
+					v2Idx = parentVertices[i + 1];
+					v3Idx = node.verticesIDs[0][i + 1];
+					v4Idx = node.verticesIDs[0][i];
+				}
+			}
+
+			v1Idx = node.verticesIDs[0][sectionLen - 1];
+			v2Idx = node.verticesIDs[0][0];
+			v3Idx = node.verticesIDs[1][0];
+			v4Idx = node.verticesIDs[1][sectionLen - 1];
+
+			for (let i = 0; i < sectionsNum - 1; i++) {
+				for (let j = 0; j < sectionLen; j++) {
+
+					facesIdx.push(v1Idx, v2Idx, v3Idx);
+					facesIdx.push(v1Idx, v3Idx, v4Idx);
+
+					if (j !== sectionLen - 1) {
+						v1Idx = node.verticesIDs[i][j];
+						v2Idx = node.verticesIDs[i][j + 1];
+						v3Idx = node.verticesIDs[i + 1][j + 1];
+						v4Idx = node.verticesIDs[i + 1][j];
+					}
+				}
+
+				if (i !== sectionsNum - 2) {
+					v1Idx = node.verticesIDs[i + 1][sectionLen - 1];
+					v2Idx = node.verticesIDs[i + 1][0];
+					v3Idx = node.verticesIDs[i + 2][0];
+					v4Idx = node.verticesIDs[i + 2][sectionLen - 1];
+				}
+			}
+
+			if (node.childNode.length === 0) {
+				for (let i = 0; i < sectionLen - 2; i++) {
+					v1Idx = node.verticesIDs[sectionsNum - 1][i];
+					v2Idx = node.verticesIDs[sectionsNum - 1][i + 1];
+					v3Idx = node.verticesIDs[sectionsNum - 1][sectionLen - 1];
+					facesIdx.push(v1Idx, v2Idx, v3Idx);
+				}
+			}
+
+			//if(node.a0 < alpha * leavesCutoff){
+			if(node.leavesIDs.length !== 0){
+
+				for(let h = 0; h < leavesDensity; h++){
+
+					for(let g = 0; g < 3; g++){
+						let leaveFirstPoint = node.leavesIDs[h*3+g];
+						leavesIDx.push(leaveFirstPoint);
+					}
+
+				}
+			}
+
+			// Si la branche est assez petite
+			if(node.a0 < alpha * leavesCutoff){
+				// Si la probabilité d'avoir une pomme est assez grande
+				if(applesProbability > Math.random()){
+					let apple = new THREE.SphereBufferGeometry(alpha/2);
+
+					const nodeVector = vectorFromPoints(node.p0,node.p1)
+
+					// Crée une matrice de translation aléatoire pour la pomme
+					let randomTranslationMatrix = getRandomTranslation(node,alpha,nodeVector);
+					apple.applyMatrix4(randomTranslationMatrix);
+
+					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
+					let translationToBranch = new THREE.Matrix4();
+					translationToBranch.makeTranslation(nodeQueue[0].p0.x + nodeVector.x / 2, nodeQueue[0].p0.y + nodeVector.y / 2, nodeQueue[0].p0.z + nodeVector.z / 2)
+
+					apple.applyMatrix4(translationToBranch);
+
+					apple.computeVertexNormals();
+
+					apples.push(apple);
+
+					node.applesIds.push(numberOfApples);
+					numberOfApples++;
+
+					node.numberOfPOintsApples = apple.attributes.position.length /3;
+					//node.indexApples = apple.index.array;
+
+					//let longueur = apple.index.length;
+					//console.log(longueur);
+					//const applesMesh = new THREE.Mesh(apple,apples_material);
+					//applesMesh.castShadow = true;
+					//scene.add((applesMesh));
+
+				}
+			}
+
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
+
+		geometry.setIndex(facesIdx);
+		geometry.computeVertexNormals();
+		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
+		//const leavesMesh = 5;
+		//const applesMesh = 6;
+		branchesMesh.castShadow = true;
+		scene.add(branchesMesh);
+
+		leaf.setIndex(leavesIDx);
+		leaf.computeVertexNormals();
+		const leavesMesh = new THREE.Mesh(leaf,leafMaterial);
+		leavesMesh.castShadow = true;
+		scene.add(leavesMesh);
+
+		const mergedApples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples,false);
+		const applesMesh = new THREE.Mesh(mergedApples,apples_material);
+		applesMesh.castShadow = true;
+		scene.add(applesMesh);
+
+		//let leavesMesh = 5;
+		//let applesMesh = 6;
+
+		//return [geometry, leavesMesh, applesMesh.geometry];
+		return [branchesMesh.geometry,leavesMesh.geometry,applesMesh.geometry]
 	},
 
-	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, rootNode) {
-		//TODO
+	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
+
+		let leavesCounting = 0;
+
+
+
+		let nodeQueue = [rootNode];
+		let nodeNum = 0;
+		while (nodeQueue.length > 0) {
+			nodeNum++;
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
+
+		nodeQueue = [rootNode];
+
+		const sectionsNum = rootNode.sections.length;
+		const sectionLen = rootNode.sections[0].length;
+		const f32vertices = new Float32Array(nodeNum * sectionsNum * sectionLen * 3);
+
+		const f32VerticesLeaves = new Float32Array(nodeNum*leavesDensity*3*3);
+		let test = nodeNum*leavesDensity*5;
+		const verticesLeaves = [];
+
+		let startVIdx = 0;
+		let startLeaves = 0;
+		while (nodeQueue.length > 0) {
+
+			nodeQueue[0].verticesIDs = [];
+
+			if (!nodeQueue[0].parentNode) {
+				for (let i = 0; i < sectionsNum; i++) {
+
+					let sectionIDs = [];
+					for (let j = 0; j < sectionLen; j++) {
+
+						let verticesIdx = startVIdx + (i * sectionLen + j) * 3;
+						f32vertices[verticesIdx] = nodeQueue[0].sections[i][j].x;
+						f32vertices[verticesIdx + 1] = nodeQueue[0].sections[i][j].y;
+						f32vertices[verticesIdx + 2] = nodeQueue[0].sections[i][j].z;
+
+						sectionIDs.push(verticesIdx/3);
+					}
+					nodeQueue[0].verticesIDs.push(sectionIDs);
+				}
+
+			}
+			else{
+
+				for (let i = 0; i < sectionsNum - 1; i++) {
+
+					let sectionIDs = [];
+					for (let j = 0; j < sectionLen; j++) {
+
+						let verticesIdx = startVIdx + (i * sectionLen + j) * 3;
+						f32vertices[verticesIdx] = nodeQueue[0].sections[i][j].x;
+						f32vertices[verticesIdx + 1] = nodeQueue[0].sections[i][j].y;
+						f32vertices[verticesIdx + 2] = nodeQueue[0].sections[i][j].z;
+
+						sectionIDs.push(verticesIdx/3);
+					}
+					nodeQueue[0].verticesIDs.push(sectionIDs);
+				}
+			}
+
+			// Si la branche est assez petite pour contenir des feuilles on crée
+			// les points de c'est feuilles.
+			if(nodeQueue[0].a0 < alpha * leavesCutoff){
+
+				const nodeVector = vectorFromPoints(nodeQueue[0].p0,nodeQueue[0].p1)
+
+				// Nous devons créer leavesDensity de feuilles. Afin d'avoir un triangle équilatéral nous prenons les
+				// coordonnées (0,0,0) (alpha,0,0) et (alpha/2,L,0) ou L est calculé grâce à pythagore et nous avons
+				// ainsi un triangle équilatéral. Nous appliquons par la suite une translation et rotation
+				// aléatoire.
+				for(let  k = 0; k < leavesDensity;k++) {
+					const firstPoint = new THREE.Vector3(0, 0, 0);
+					// alpha*alpha??????
+					const secundPoint = new THREE.Vector3(alpha, 0, 0);
+
+					// Calcul de la valeur en Y du troisième point grâce à pythagore.
+					const thirdPointY = Math.sqrt((Math.pow(alpha, 2) - Math.pow(alpha / 2, 2)));
+					const thirdPoint = new THREE.Vector3(alpha / 2, thirdPointY, 0);
+
+					// Crée une matrice de rotation aléatoire
+					let rotationMatrix = getRandomRotationMatrix();
+
+					firstPoint.applyMatrix4(rotationMatrix);
+					secundPoint.applyMatrix4(rotationMatrix);
+					thirdPoint.applyMatrix4(rotationMatrix);
+
+					// Crée une matrice de translation aléatoire
+					let randomTranslationMatrix = new THREE.Matrix4();
+					randomTranslationMatrix = getRandomTranslation(nodeQueue[0],alpha,nodeVector);
+
+					firstPoint.applyMatrix4(randomTranslationMatrix);
+					secundPoint.applyMatrix4(randomTranslationMatrix);
+					thirdPoint.applyMatrix4(randomTranslationMatrix);
+
+					firstPoint.applyMatrix4(nodeQueue[0].transform);
+					secundPoint.applyMatrix4(nodeQueue[0].transform);
+					thirdPoint.applyMatrix4(nodeQueue[0].transform);
+
+					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
+					let translationToBranch = new THREE.Matrix4();
+					translationToBranch.makeTranslation(nodeQueue[0].p0.x + nodeVector.x / 2, nodeQueue[0].p0.y + nodeVector.y / 2, nodeQueue[0].p0.z + nodeVector.z / 2)
+
+					firstPoint.applyMatrix4(translationToBranch);
+					secundPoint.applyMatrix4(translationToBranch);
+					thirdPoint.applyMatrix4(translationToBranch);
+
+					// Nous ajoutons les points qui formeront la feuille à notre tableau.
+					f32VerticesLeaves[startLeaves] = firstPoint.x
+					f32VerticesLeaves[startLeaves + 1] = firstPoint.y;
+					f32VerticesLeaves[startLeaves + 2] = firstPoint.z;
+					nodeQueue[0].leavesIDs.push(leavesCounting);
+					leavesCounting++;
+
+					f32VerticesLeaves[startLeaves + 3] = secundPoint.x;
+					f32VerticesLeaves[startLeaves + 4] = secundPoint.y;
+					f32VerticesLeaves[startLeaves + 5] = secundPoint.z;
+					nodeQueue[0].leavesIDs.push(leavesCounting);
+					leavesCounting++
+
+					f32VerticesLeaves[startLeaves + 6] = thirdPoint.x;
+					f32VerticesLeaves[startLeaves + 7] = thirdPoint.y;
+					f32VerticesLeaves[startLeaves + 8] = thirdPoint.z;
+					nodeQueue[0].leavesIDs.push(leavesCounting);
+					leavesCounting++
+					startLeaves += 9
+				}
+
+			}
+
+			startVIdx += nodeQueue[0].verticesIDs.length * sectionLen * 3;
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
+
+
+		return [f32vertices,f32VerticesLeaves];
+	},
+
+	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, applesGeometryBuffer, rootNode) {
+
+		const sectionsNum = rootNode.sections.length - 1;
+		const sectionLen = rootNode.sections[0].length;
+		//let leavesCoordsCounting = 0;
+
+		let nombrePommes = 0;
+		let first = false;
+		let applesIndex = 0;
+
+		let nodeQueue = rootNode.childNode;
+		while (nodeQueue.length > 0) {
+
+			let node = nodeQueue[0];
+
+			for (let i = 0; i < sectionsNum; i++) {
+				for (let j = 0; j < sectionLen; j++) {
+
+					const vertexXIdx = node.verticesIDs[i][j] * 3;
+					const vertexYIdx = vertexXIdx + 1;
+					const vertexZIdx = vertexXIdx + 2;
+
+					let vertex = new THREE.Vector3(trunkGeometryBuffer[vertexXIdx],
+						                           trunkGeometryBuffer[vertexYIdx],
+						                           trunkGeometryBuffer[vertexZIdx]);
+
+					const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
+						                                                    -node.p0Prev.y,
+						                                                    -node.p0Prev.z);
+					const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
+						                                                        node.p0.y,
+						                                                        node.p0.z);
+
+					vertex.applyMatrix4(translation);
+					vertex.applyMatrix4(node.transform);
+					vertex.applyMatrix4(translationBack);
+
+					trunkGeometryBuffer[vertexXIdx] = vertex.x;
+					trunkGeometryBuffer[vertexYIdx] = vertex.y;
+					trunkGeometryBuffer[vertexZIdx] = vertex.z;
+
+				}
+			}
+
+			if(node.leavesIDs.length !== 0){
+
+					for(let h = 0; h < leavesDensity * 3; h++){
+
+						const leavesVertexXIdX = node.leavesIDs[h]*3;
+						const leavesVertexXIdY = leavesVertexXIdX + 1;
+						const leavesVertexXIdZ = leavesVertexXIdX + 2;
+
+						//console.log(leavesGeometryBuffer[leavesVertexXIdX]);
+
+						let leavesVertex =  new THREE.Vector3(leavesGeometryBuffer[leavesVertexXIdX],
+							                                  leavesGeometryBuffer[leavesVertexXIdY],
+							                                  leavesGeometryBuffer[leavesVertexXIdZ]);
+
+						const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
+							-node.p0Prev.y,
+							-node.p0Prev.z);
+						const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
+							node.p0.y,
+							node.p0.z);
+
+
+						leavesVertex.applyMatrix4(translation);
+						leavesVertex.applyMatrix4(node.transform);
+						leavesVertex.applyMatrix4(translationBack);
+
+						leavesGeometryBuffer[leavesVertexXIdX] = leavesVertex.x;
+						leavesGeometryBuffer[leavesVertexXIdY] = leavesVertex.y;
+						leavesGeometryBuffer[leavesVertexXIdZ] = leavesVertex.z;
+
+					}
+
+			}
+
+			if(node.applesIds.length !== 0){
+
+				nombrePommes++;
+				if(first === false){
+					console.log(node.numberOfPOintsApples);
+					first = true;
+				}
+
+
+				for(let g = 0; g < node.numberOfPOintsApples;g++){
+
+					const applesVertexXIdX = applesIndex//node.leavesIDs[h]*3;
+					const applesVertexXIdY = applesVertexXIdX + 1;
+					const applesVertexXIdZ = applesVertexXIdX + 2;
+					applesIndex += 3
+
+					let applesVertex =  new THREE.Vector3(applesGeometryBuffer[applesVertexXIdX],
+						applesGeometryBuffer[applesVertexXIdY],
+						applesGeometryBuffer[applesVertexXIdZ]);
+
+					const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
+						-node.p0Prev.y,
+						-node.p0Prev.z);
+					const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
+						node.p0.y,
+						node.p0.z);
+
+
+					applesVertex.applyMatrix4(translation);
+					applesVertex.applyMatrix4(node.transform);
+					applesVertex.applyMatrix4(translationBack);
+
+					applesGeometryBuffer[applesVertexXIdX] = applesVertex.x;
+					applesGeometryBuffer[applesVertexXIdY] = applesVertex.y;
+					applesGeometryBuffer[applesVertexXIdZ] = applesVertex.z;
+
+
+				}
+
+			}
+
+
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
+		}
+		//console.log(nodeQueue.numberOfPOintsApples);
+		console.log(nombrePommes);
+		console.log(applesGeometryBuffer.length);
 	},
 
 	drawTreeSkeleton: function (rootNode, scene, color = 0xffffff, matrix = new THREE.Matrix4()) {

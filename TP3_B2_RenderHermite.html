@@ -28,6 +28,7 @@
 			const grammar = TP3.Lindenmayer.iterateGrammarProb(data.str, data.dict, data.iters);
 			const nodeTree = TP3.Lindenmayer.generateSkeleton(grammar, data.theta, data.alpha, data.decay);
 			TP3.Geometry.generateSegmentsHermite(nodeTree, lengthDivisions, radialDivisions);
+			//TP3.Render.drawTreeSegments(nodeTree, scene);
 			TP3.Render.drawTreeHermite(nodeTree, scene, data.alpha);
 		}
 

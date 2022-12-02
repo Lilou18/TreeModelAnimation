@@ -18,10 +18,19 @@ class Node {
 		this.p0 = null; //Position de depart de la branche
 		this.p1 = null; //Position finale de la branche
 
+		this.p0Prev = null;
+
 		this.a0 = null; //Rayon de la branche a p0
 		this.a1 = null; //Rayon de la branche a p1
 
+		this.transform = null; //Matrice de transformation de la branche
+
 		this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
+		this.verticesIDs = null;
+		this.leavesIDs = [];
+		this.applesIds = [];
+		this.numberOfPOintsApples = 0;
+		this.indexApples = null;
 	}
 }
 
@@ -64,58 +73,165 @@ TP3.Geometry = {
 	},
 
 	simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
-		/**
-		 * Returns the simplified Skeleton of a given tree.
-		 *
-		 * @param {Node} rootNode The root of the tree.
-		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
-		 * @return {Node} The root of the tree.
-		 */
-		for (let i = 0; i < rootNode.childNode.length; i++) {
-			TP3.Geometry.simplifyNode(rootNode.childNode[i], rotationThreshold);
+		//TODO
+		let nodeQueue = [rootNode];
+		while (nodeQueue.length > 0) {
+
+			let oneChild = nodeQueue[0].childNode.length === 1;
+			if (oneChild) {
+
+				let parentVector = new THREE.Vector3(nodeQueue[0].p1.x - nodeQueue[0].p0.x,
+					                                 nodeQueue[0].p1.y - nodeQueue[0].p0.y,
+					                                 nodeQueue[0].p1.z - nodeQueue[0].p0.z
+				);
+				let childVector = new THREE.Vector3(nodeQueue[0].childNode[0].p1.x - nodeQueue[0].childNode[0].p0.x,
+					                                nodeQueue[0].childNode[0].p1.y - nodeQueue[0].childNode[0].p0.y,
+					                                nodeQueue[0].childNode[0].p1.z - nodeQueue[0].childNode[0].p0.z
+				);
+
+				let thresholdMet = childVector.angleTo(parentVector) < rotationThreshold;
+				while (oneChild && thresholdMet) {
+
+					let parent = nodeQueue[0];
+					let child = nodeQueue[0].childNode[0];
+					let grandChildren = nodeQueue[0].childNode[0].childNode;
+
+					for (let j = 0; j < grandChildren.length; j++) {
+						grandChildren[j].parentNode = parent;
+					}
+					child.parent = child;
+					child.childNode = [];
+					parent.childNode = grandChildren;
+
+					parent.p1 = child.p1;
+					parent.a1 = child.a1;
+
+					oneChild = parent.childNode.length === 1;
+					if (oneChild) {
+						parentVector = new THREE.Vector3(parent.p1.x - parent.p0.x,
+													     parent.p1.y - parent.p0.y,
+													     parent.p1.z - parent.p0.z
+						);
+
+						childVector = new THREE.Vector3(grandChildren[0].p1.x - grandChildren[0].p0.x,
+													    grandChildren[0].p1.y - grandChildren[0].p0.y,
+													    grandChildren[0].p1.z - grandChildren[0].p0.z
+						);
+						thresholdMet = childVector.angleTo(parentVector) < rotationThreshold;
+					}
+				}
+			}
+
+			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
+			nodeQueue.splice(0,1);
 		}
 
-		return rootNode
+		return rootNode;
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
-		//TODO
+
+		let nodeQueue = [rootNode];
+		while (nodeQueue.length > 0) {
+
+			let node = nodeQueue[0];
+			let parentRotation = new THREE.Matrix4();
+			node.transform = new THREE.Matrix4();
+
+			let h0 = new THREE.Vector3(node.p0.x, node.p0.y, node.p0.z);
+			let h1 = new THREE.Vector3(node.p1.x, node.p1.y, node.p1.z);
+			let v1 = new THREE.Vector3(h1.x - h0.x, h1.y - h0.y, h1.z - h0.z);
+			let v0 = new THREE.Vector3(v1.x, v1.y, v1.z);
+			if (node.parentNode) {
+				v0 = new THREE.Vector3(node.parentNode.p1.x - node.parentNode.p0.x,
+					node.parentNode.p1.y - node.parentNode.p0.y,
+					node.parentNode.p1.z - node.parentNode.p0.z);
+				parentRotation = node.parentNode.transform;
+			}
+
+			const radiusFactor = (node.a0 - node.a1)/(lengthDivisions - 1);
+			const dt = 1/(lengthDivisions - 1);
+			const dtheta = 2 * Math.PI/radialDivisions;
+
+			node.sections = [];
+
+			for (let i = 0; i < lengthDivisions; i++) {
+
+				let t = i * dt;
+
+				let [pt, vt] = this.hermite(h0, h1, v0, v1, t);
+				const translation = new THREE.Matrix4().makeTranslation(pt.x, pt.y, pt.z);
+
+				let sectionPoints = [];
+				let radius = node.a0 - radiusFactor * i;
+				for (let j = 0; j < radialDivisions; j++) {
+					let point = new THREE.Vector3(radius * Math.sin(dtheta * j + Math.PI/2),
+												  0,
+												  radius * Math.cos(dtheta * j + Math.PI/2));
+
+					point.applyMatrix4(parentRotation);
+					point.applyMatrix4(node.transform);
+					point.applyMatrix4(translation);
+					sectionPoints.push(point);
+				}
+
+				if (i !== lengthDivisions - 1) {
+					let vtdt = this.hermite(h0, h1, v0, v1, t + dt)[1];
+					[axis, angle] = this.findRotation(vt, vtdt);
+					const rotation = new THREE.Matrix4().makeRotationAxis(axis, angle);
+					node.transform.multiplyMatrices(rotation, node.transform);
+				}
+
+				node.sections.push(sectionPoints);
+			}
+
+			node.transform.multiplyMatrices(node.transform, parentRotation);
+			nodeQueue = nodeQueue.concat(node.childNode);
+			nodeQueue.splice(0,1);
+		}
+
+		return rootNode;
 	},
 
 	hermite: function (h0, h1, v0, v1, t) {
-		// noms de variable selon l'image de : https://fr.wikipedia.org/wiki/Algorithme_de_Casteljau
-		// conversion : https://stackoverflow.com/questions/7880884/how-to-convert-from-an-hermite-curve-into-bezier-curve
-		// conversion de courbe de Hermite en courbe de Bézier
-		// vo et v1 sont les tangentes
-		// h0 et h1 sont les points
-		const p00 = h0
-		const p01 = h0 + v0/3
-		const p02 = h1 - v1/3
-		const p03 = h1
 
-		// algorithme de De Casteljau
+		let p0 = new THREE.Vector3(h0.x, h0.y, h0.z);
+		let p1 = new THREE.Vector3(h0.x + v0.x/3, h0.y + v0.y/3, h0.z + v0.z/3);
+		let p2 = new THREE.Vector3(h1.x - v1.x/3, h1.y - v1.y/3, h1.z - v1.z/3);
+		let p3 = new THREE.Vector3(h1.x, h1.y, h1.z);
 
-		// premier retranchement
-		const p10 = lerp(p00,p01,t)
-		const p11 = lerp(p01,p02,t)
-		const p12 = lerp(p02,p03,t)
+		p0 = this.lerp(p0, p1, t);
+		p1 = this.lerp(p1, p2, t);
+		p2 = this.lerp(p2, p3, t);
 
-		// deuxième retranchement
-		const p20 = lerp(p10,p11,t)
-		const p21 = lerp(p11,p12,t)
+		p0 = this.lerp(p0, p1, t);
+		p1 = this.lerp(p1, p2, t);
 
-		// point et tangente
-		const p = lerp(p20,p21,t)
-		const dp = vectorFromPoints(p20, p21).normalize();
+		let p = this.lerp(p0, p1, t);
+		let dp = new THREE.Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).normalize();
 
 		return [p, dp];
 	},
 
+	lerp: function (p0, p1, t) {
+		return new THREE.Vector3((1 - t) * p0.x + t * p1.x,
+			                     (1 - t) * p0.y + t * p1.y,
+			                     (1 - t) * p0.z + t * p1.z
+		);
+	},
 
 	// Trouver l'axe et l'angle de rotation entre deux vecteurs
 	findRotation: function (a, b) {
+
+		let length = a.length() * b.length();
+
 		const axis = new THREE.Vector3().crossVectors(a, b).normalize();
-		var c = a.dot(b) / (a.length() * b.length());
+
+		if (length === 0) {
+			return [axis, 0];
+		}
+
+		var c = a.dot(b) / length;
 
 		if (c < -1) {
 			c = -1;
