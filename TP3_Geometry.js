@@ -1,15 +1,3 @@
-function vectorFromPoints(p0, p1) {
-	return new THREE.Vector3(
-		p1.x - p0.x,
-		p1.y - p0.y,
-		p1.z - p0.z
-	);
-}
-
-function lerp(a, b, t) {
-	return a.multiplyScalar(1-t).add(b.multiplyScalar(t));
-}
-
 class Node {
 	constructor(parentNode) {
 		this.parentNode = parentNode; //Noeud parent
@@ -36,42 +24,6 @@ class Node {
 
 TP3.Geometry = {
 
-	simplifyNode: function (node, rotationThreshold) {
-		/**
-		 * Checks if node need to be removed from the tree.
-		 * Remove node from tree if it's the only child of a tree
-		 * and its rotation angle is smaller than the threshold.
-		 *
-		 * @param {Node} node The actual node of the tree.
-		 * @param {number} rotationThreshold Minimum angle to consider a valid new branch.
-		 */
-
-		// Calculer la rotation effective du node
-		const childVector = vectorFromPoints(node.p0, node.p1);
-		const parentVector = vectorFromPoints(node.parentNode.p0, node.parentNode.p1);
-
-		if (node.parentNode.childNode.length === 1 && childVector.angleTo(parentVector) < rotationThreshold) {
-			// REMOVE NODE
-
-			// parentNode se termine maintenant à la fin du node actuel (on étire le parent)
-			node.parentNode.p1 = node.p1;
-			node.parentNode.a1 = node.a1;
-
-			// les petits-enfants prennent le parent comme nouveau parent
-			for (let i = 0; i < node.childNode.length; i++) {
-				node.childNode[i].parentNode = node.parentNode;
-			}
-
-			// les enfants du node sont transférés au parent
-			node.parentNode.childNode = node.childNode;
-		}
-
-		// appel récursif
-		for (let i = 0; i < node.childNode.length; i++) {
-			TP3.Geometry.simplifyNode(node.childNode[i], rotationThreshold);
-		}
-	},
-
 	simplifySkeleton: function (rootNode, rotationThreshold = 0.0001) {
 		//TODO
 		let nodeQueue = [rootNode];
@@ -81,12 +33,12 @@ TP3.Geometry = {
 			if (oneChild) {
 
 				let parentVector = new THREE.Vector3(nodeQueue[0].p1.x - nodeQueue[0].p0.x,
-					                                 nodeQueue[0].p1.y - nodeQueue[0].p0.y,
-					                                 nodeQueue[0].p1.z - nodeQueue[0].p0.z
+													 nodeQueue[0].p1.y - nodeQueue[0].p0.y,
+													 nodeQueue[0].p1.z - nodeQueue[0].p0.z
 				);
 				let childVector = new THREE.Vector3(nodeQueue[0].childNode[0].p1.x - nodeQueue[0].childNode[0].p0.x,
-					                                nodeQueue[0].childNode[0].p1.y - nodeQueue[0].childNode[0].p0.y,
-					                                nodeQueue[0].childNode[0].p1.z - nodeQueue[0].childNode[0].p0.z
+													nodeQueue[0].childNode[0].p1.y - nodeQueue[0].childNode[0].p0.y,
+													nodeQueue[0].childNode[0].p1.z - nodeQueue[0].childNode[0].p0.z
 				);
 
 				let thresholdMet = childVector.angleTo(parentVector) < rotationThreshold;
@@ -109,13 +61,13 @@ TP3.Geometry = {
 					oneChild = parent.childNode.length === 1;
 					if (oneChild) {
 						parentVector = new THREE.Vector3(parent.p1.x - parent.p0.x,
-													     parent.p1.y - parent.p0.y,
-													     parent.p1.z - parent.p0.z
+														 parent.p1.y - parent.p0.y,
+														 parent.p1.z - parent.p0.z
 						);
 
 						childVector = new THREE.Vector3(grandChildren[0].p1.x - grandChildren[0].p0.x,
-													    grandChildren[0].p1.y - grandChildren[0].p0.y,
-													    grandChildren[0].p1.z - grandChildren[0].p0.z
+														grandChildren[0].p1.y - grandChildren[0].p0.y,
+														grandChildren[0].p1.z - grandChildren[0].p0.z
 						);
 						thresholdMet = childVector.angleTo(parentVector) < rotationThreshold;
 					}
