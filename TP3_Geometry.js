@@ -13,12 +13,11 @@ class Node {
 
 		this.transform = null; //Matrice de transformation de la branche
 
-		this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
-		this.verticesIDs = null;
-		this.leavesIDs = [];
-		this.applesIds = [];
-		this.numberOfPOintsApples = 0;
-		this.indexApples = null;
+		this.sections = null; //Liste contenant une liste de points représentant les segments circulaires du cylindre generalise
+		this.verticesIDs = null; // Tableau d'indexes des points des branches
+		this.leavesIDs = []; // Tableau d'indexes des points des feuilles
+		this.applesIds = []; // Paramètre permettant de déterminer si la branche à une pomme ou non
+		this.numberOfPOintsApples = 0; //Nombre de points dont est formée la pomme
 	}
 }
 

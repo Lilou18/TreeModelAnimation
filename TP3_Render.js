@@ -40,17 +40,18 @@ function getRandomInsideDisk(radius) {
  * @param {node} node Noeud où nous sommes rendu dans l'arbre
  * @param {number} alpha Valeur alpha de la branche
  * @param {node} nodeVector Vecteur de la branche/noeud
+ * @param {boolean} isAnApple Valeur booléenne qui nous permet de déterminer si ce sera la matrice de
+ *                            transformation d'une pomme.
  */
-//TODO bool des pommes
-function getRandomTranslation(node,alpha,nodeVector){
+function getRandomTranslation(node,alpha,nodeVector,isAnApple){
 
-	// La moitié de la longueur de notre branche (point millieu de la branche)
+	// La moitié de la longueur de notre branche (point milieu de la branche)
 	const halfHeight = nodeVector.length()/2;
 
 	let randY;
 	// Si la branche n'a pas d'enfants, les feuilles doivent dépasser la longueur de la branche et
 	// doivent être aléatoire.
-	if(node.childNode.length === 0){
+	if(node.childNode.length === 0 && isAnApple === false){
 		randY = getRandomInsideInterval(-halfHeight, halfHeight + alpha);
 	}
 	else{
@@ -93,15 +94,16 @@ function getRandomRotationMatrix(){
 
 TP3.Render = {
 	/**
-	 *
+	 * Cette fonction permettra de créer la version rough de notre arbre
 	 * @param {node} rootNode Noeud de départ de l'arbre
-	 * @param {scene} scene Scene ou sera notre TreeRough
+	 * @param {scene} scene Scene où sera notre TreeRough
 	 * @param {number} alpha Valeur alpha des branches
 	 * @param {number} radialDivisions Nombre de subdivisions radiales des cylindres
 	 * @param {number} leavesCutoff Le facteur de coupure des feuilles
 	 * @param {number} leavesDensity Le nombre de feuilles par branche
 	 * @param {number} applesProbability Probabilité qu'une branche ait une pomme
 	 * @param {matrix} matrix Matrice identité
+	 *
 	 */
 	drawTreeRough: function (rootNode, scene, alpha, radialDivisions = 8, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
@@ -165,15 +167,15 @@ TP3.Render = {
 			const translationAboveGround = new THREE.Matrix4();
 			translationAboveGround.makeTranslation(0, height/2, 0);
 
-			// Rotation qui sera appliquer à branche
+			// Rotation qui sera appliquer au cylindre/branche
 			const rotation = new THREE.Matrix4();
 			rotation.makeRotationAxis(axis, angle);
 
-			// Translation qui permettra à notre branche d'être juste en haut du parent
+			// Translation qui permettra à notre branche/cylindre d'être juste en haut du parent
 			const translationAboveParent = new THREE.Matrix4();
 			translationAboveParent.makeTranslation(0, parentVector.length()/2, 0);
 
-			// Application de toutes, c'est transformations afin que notre branche soit bien placé dans l'arbre
+			// Application de toutes, c'est transformations afin que notre branche soit bien placée dans l'arbre
 			let transform = new THREE.Matrix4();
 			transform.multiplyMatrices(translationAboveGround,transform);
 			transform.multiplyMatrices(rotation,transform);
@@ -182,6 +184,7 @@ TP3.Render = {
 
 			node.transform = transform;
 			branchGeometry.applyMatrix4(transform);
+			// Ajoute notre branche au tableau de Mesh de branches
 			branches.push(branchGeometry);
 
 			// Si la branche est assez petite afin d'avoir des feuilles, on lui en ajoute
@@ -189,13 +192,13 @@ TP3.Render = {
 
 				// On doit ajouter leavesDensity feuilles à la branche
 				for (let i = 0; i < leavesDensity; i++) {
-					// N.B. LES FEUILLES SONT INITIALISÉES AU MILIEU DE LA BRANCHE (origine)
+					// N.B. Les feuilles sont initialisées au milieu de la branche (origine)
 
 					// Crée une matrice de rotation aléatoire pour la feuille
 					let rotation_itself = getRandomRotationMatrix();
 
-					// Crée une matrice de transformation qui est une translation aléatoire
-					let translationLeaf = getRandomTranslation(node,alpha,nodeVector)
+					// Crée une matrice de transformation qui est une translation aléatoire pour la feuille
+					let translationLeaf = getRandomTranslation(node,alpha,nodeVector,false)
 
 					let plane_geometry = new THREE.PlaneBufferGeometry(alpha, alpha);
 
@@ -213,40 +216,31 @@ TP3.Render = {
 				}
 
 			}
-
-			// APPLE (CubeBufferGeometry)
+			// Si notre branche est assez petite pour avoir des feuilles
 			if (node.a0 < alpha * leavesCutoff) {
-				// N.B. LES POMMES SONT INITIALISÉES AU MILIEU DE LA BRANCHE (origine)
+				// N.B. Les pommes sont initialisées au milieu de la branche (origine)
 
+				// On vérifie la probabilité qu'une pomme sois sur la branche
 				if (applesProbability > Math.random()) {
-					// rotation aléatoire sur elle-même
-					// choix d'un axe aléatoire et d'un angle aléatoire
-					let rand_axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
-					let rand_angle = Math.random()*2*Math.PI;
-					let rotation_itself = new THREE.Matrix4();
-					rotation_itself.makeRotationAxis(rand_axis, rand_angle);
 
-					// position aléatoire relative au noeud sur l'axe de la branche
-					const rand_axial = getRandomInsideInterval(-height, height);
-					let axial_translation = new THREE.Matrix4();
-					axial_translation.makeTranslation(0, rand_axial,0);
+					// Crée une matrice de rotation aléatoire pour la pomme
+					let rotation_itself = getRandomRotationMatrix();
 
-					// éloignement de la branche de 0 à alpha/2
-					let {x, z} = getRandomInsideDisk(alpha/2);
-					let radial_translation = new THREE.Matrix4();
-					radial_translation.makeTranslation(x, 0,z);
+					// Position aléatoire de la pomme relative au nœud sur l'axe de la branche
+					let randomTranslation = getRandomTranslation(node,alpha,nodeVector,true);
 
 					const cube_geometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha);
 
-					// Transformation matrix to apply on plane_geometry
+					// Application de toutes, c'est transformations afin que nos pommes soient bien placées
+					// aléatoirement
 					const apple_matrix = new THREE.Matrix4();
 					apple_matrix.multiplyMatrices(rotation_itself,apple_matrix);
-					apple_matrix.multiplyMatrices(axial_translation,apple_matrix);
-					apple_matrix.multiplyMatrices(radial_translation,apple_matrix);
+					apple_matrix.multiplyMatrices(randomTranslation,apple_matrix);
 					apple_matrix.multiplyMatrices(transform,apple_matrix);
 
 					cube_geometry.applyMatrix4(apple_matrix);
 
+					// Ajoute notre pomme au tableau de Mesh de pommes
 					apples.push(cube_geometry);
 				}
 
@@ -256,7 +250,7 @@ TP3.Render = {
 			nodeQueue.splice(0,1);
 		}
 
-		// mergeBufferGeometries
+		// Merge les différents mesh des branches, feuilles et pommes
 		const mergedBranches = THREE.BufferGeometryUtils.mergeBufferGeometries(branches, false);
 		const branchesMesh = new THREE.Mesh(mergedBranches, branchMaterial);
 		branchesMesh.castShadow = true;
@@ -269,12 +263,23 @@ TP3.Render = {
 		const leavesMesh = new THREE.Mesh(mergedLeaves, leafMaterial);
 		leavesMesh.castShadow = true;
 
-		// Add to scene
+		// Ajoute les mesh à la scène
 		scene.add(branchesMesh);
 		scene.add(applesMesh);
 		scene.add(leavesMesh);
 	},
 
+	/**
+	 * Cette fonction permettra de créer la version rough de notre arbre
+	 * @param {node} rootNode Noeud de départ de l'arbre
+	 * @param {scene} scene Scene où sera notre TreeRough
+	 * @param {number} alpha Valeur alpha des branches
+	 * @param {number} leavesCutoff Le facteur de coupure des feuilles
+	 * @param {number} leavesDensity Le nombre de feuilles par branche
+	 * @param {number} applesProbability Probabilité qu'une branche ait une pomme
+	 * @param {matrix} matrix Matrice identité
+	 *
+	 */
 	drawTreeHermite: function (rootNode, scene, alpha, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
 
 		const branchMaterial = new THREE.MeshLambertMaterial({color: 0x8B5A2B});
@@ -394,7 +399,7 @@ TP3.Render = {
 				}
 			}
 
-			//if(node.a0 < alpha * leavesCutoff){
+			// Si la branche possède des feuilles nous initialisons l'index des positions des feuilles
 			if(node.leavesIDs.length !== 0){
 
 				for(let h = 0; h < leavesDensity; h++){
@@ -411,12 +416,14 @@ TP3.Render = {
 			if(node.a0 < alpha * leavesCutoff){
 				// Si la probabilité d'avoir une pomme est assez grande
 				if(applesProbability > Math.random()){
+					// Création d'une pomme ayant un rayon de alpha/2
 					let apple = new THREE.SphereBufferGeometry(alpha/2);
 
+					// Vecteur de la branche
 					const nodeVector = vectorFromPoints(node.p0,node.p1)
 
-					// Crée une matrice de translation aléatoire pour la pomme
-					let randomTranslationMatrix = getRandomTranslation(node,alpha,nodeVector);
+					// Crée une matrice de translation aléatoire qu'on applique ensuite sur la pomme
+					let randomTranslationMatrix = getRandomTranslation(node,alpha,nodeVector,true);
 					apple.applyMatrix4(randomTranslationMatrix);
 
 					// Nous déplaçons la feuille afin qu'elle soit bien positionner par rapport à sa branche
@@ -427,19 +434,14 @@ TP3.Render = {
 
 					apple.computeVertexNormals();
 
+					// Ajoute notre pomme au tableau de Mesh de pommes
 					apples.push(apple);
 
 					node.applesIds.push(numberOfApples);
 					numberOfApples++;
 
+					// Nombre de points dont sont formée la pomme
 					node.numberOfPOintsApples = apple.attributes.position.length /3;
-					//node.indexApples = apple.index.array;
-
-					//let longueur = apple.index.length;
-					//console.log(longueur);
-					//const applesMesh = new THREE.Mesh(apple,apples_material);
-					//applesMesh.castShadow = true;
-					//scene.add((applesMesh));
 
 				}
 			}
@@ -451,8 +453,6 @@ TP3.Render = {
 		geometry.setIndex(facesIdx);
 		geometry.computeVertexNormals();
 		const branchesMesh = new THREE.Mesh(geometry, branchMaterial);
-		//const leavesMesh = 5;
-		//const applesMesh = 6;
 		branchesMesh.castShadow = true;
 		scene.add(branchesMesh);
 
@@ -462,26 +462,24 @@ TP3.Render = {
 		leavesMesh.castShadow = true;
 		scene.add(leavesMesh);
 
+		// Merge les différents mesh des pommes
 		const mergedApples = THREE.BufferGeometryUtils.mergeBufferGeometries(apples,false);
 		const applesMesh = new THREE.Mesh(mergedApples,apples_material);
 		applesMesh.castShadow = true;
 		scene.add(applesMesh);
 
-		//let leavesMesh = 5;
-		//let applesMesh = 6;
-
-		//return [geometry, leavesMesh, applesMesh.geometry];
 		return [branchesMesh.geometry,leavesMesh.geometry,applesMesh.geometry]
 	},
 
 	initializeF32Vertex: function(rootNode,alpha,leavesCutoff,leavesDensity) {
 
+		// Compteur qui permet de bien indexer les différents points des feuilles
 		let leavesCounting = 0;
-
-
 
 		let nodeQueue = [rootNode];
 		let nodeNum = 0;
+
+		// TODO est-ce que c'est vraiment utile?????
 		while (nodeQueue.length > 0) {
 			nodeNum++;
 			nodeQueue = nodeQueue.concat(nodeQueue[0].childNode);
@@ -494,11 +492,11 @@ TP3.Render = {
 		const sectionLen = rootNode.sections[0].length;
 		const f32vertices = new Float32Array(nodeNum * sectionsNum * sectionLen * 3);
 
+		// Tableau qui contient toutes les coordonnées x,y,z des différentes feuilles
 		const f32VerticesLeaves = new Float32Array(nodeNum*leavesDensity*3*3);
-		let test = nodeNum*leavesDensity*5;
-		const verticesLeaves = [];
 
 		let startVIdx = 0;
+		// Compteur qui permet de bien indexer les différentes coordonnées des feuilles
 		let startLeaves = 0;
 		while (nodeQueue.length > 0) {
 
@@ -569,7 +567,7 @@ TP3.Render = {
 
 					// Crée une matrice de translation aléatoire
 					let randomTranslationMatrix = new THREE.Matrix4();
-					randomTranslationMatrix = getRandomTranslation(nodeQueue[0],alpha,nodeVector);
+					randomTranslationMatrix = getRandomTranslation(nodeQueue[0],alpha,nodeVector,false);
 
 					firstPoint.applyMatrix4(randomTranslationMatrix);
 					secondPoint.applyMatrix4(randomTranslationMatrix);
@@ -620,6 +618,14 @@ TP3.Render = {
 		return [f32vertices,f32VerticesLeaves];
 	},
 
+	/**
+	 * Cette fonction permettra de mettre à jour notre arbre après l'application de forces
+	 * @param {Mesh} trunkGeometryBuffer Mesh de toutes nos branches
+	 * @param {Mesh} leavesGeometryBuffer Mesh de toutes nos feuilles
+	 * @param {Mesh} applesGeometryBuffer Mesh de toutes nos pommes
+	 * @param {node} rootNode Noeud de départ de l'arbre
+	 *
+	 */
 	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, applesGeometryBuffer, rootNode) {
 
 		const sectionsNum = rootNode.sections.length - 1;
@@ -661,28 +667,32 @@ TP3.Render = {
 				}
 			}
 
+			// Si notre branche à des feuilles
 			if(node.leavesIDs.length !== 0){
 
+				    // Pour chacune de c'est feuilles il faut modifier les coordonnées de leurs points
 					for(let h = 0; h < leavesDensity * 3; h++){
 
+						// Index des coordonnées x,y,z d'un point d'une feuille
 						const leavesVertexXIdX = node.leavesIDs[h]*3;
 						const leavesVertexXIdY = leavesVertexXIdX + 1;
 						const leavesVertexXIdZ = leavesVertexXIdX + 2;
 
-						//console.log(leavesGeometryBuffer[leavesVertexXIdX]);
-
+						// Vecteur représentant la position d'un point d'une feuille dans la scène
 						let leavesVertex =  new THREE.Vector3(leavesGeometryBuffer[leavesVertexXIdX],
 							                                  leavesGeometryBuffer[leavesVertexXIdY],
 							                                  leavesGeometryBuffer[leavesVertexXIdZ]);
 
 						const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
-							-node.p0Prev.y,
-							-node.p0Prev.z);
+																				-node.p0Prev.y,
+																				-node.p0Prev.z);
 						const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
-							node.p0.y,
-							node.p0.z);
+																					node.p0.y,
+																					node.p0.z);
 
 
+						// Transformation appliquée à la position du point de la feuille afin qu'elle suive
+						// le mouvement de force
 						leavesVertex.applyMatrix4(translation);
 						leavesVertex.applyMatrix4(node.transform);
 						leavesVertex.applyMatrix4(translationBack);
@@ -695,27 +705,31 @@ TP3.Render = {
 
 			}
 
+			// Si notre branche à des pommes
 			if(node.applesIds.length !== 0){
-
+				// Pour chacune de c'est pommes il faut modifier les coordonnées de leurs points
 				for(let g = 0; g < node.numberOfPOintsApples;g++){
 
-					const applesVertexXIdX = applesIndex//node.leavesIDs[h]*3;
+					// Index des coordonnées x,y,z d'un point d'une pomme
+					const applesVertexXIdX = applesIndex
 					const applesVertexXIdY = applesVertexXIdX + 1;
 					const applesVertexXIdZ = applesVertexXIdX + 2;
 					applesIndex += 3
 
+					// Vecteur représentant la position d'un point d'une pomme dans la scène
 					let applesVertex =  new THREE.Vector3(applesGeometryBuffer[applesVertexXIdX],
-						applesGeometryBuffer[applesVertexXIdY],
-						applesGeometryBuffer[applesVertexXIdZ]);
+														  applesGeometryBuffer[applesVertexXIdY],
+														  applesGeometryBuffer[applesVertexXIdZ]);
 
 					const translation = new THREE.Matrix4().makeTranslation(-node.p0Prev.x,
-						-node.p0Prev.y,
-						-node.p0Prev.z);
+																			-node.p0Prev.y,
+																			-node.p0Prev.z);
 					const translationBack = new THREE.Matrix4().makeTranslation(node.p0.x,
-						node.p0.y,
-						node.p0.z);
+																				node.p0.y,
+																				node.p0.z);
 
-
+					// Transformation appliquée à la position du point de la pomme afin qu'elle suive
+					// le mouvement de force
 					applesVertex.applyMatrix4(translation);
 					applesVertex.applyMatrix4(node.transform);
 					applesVertex.applyMatrix4(translationBack);
